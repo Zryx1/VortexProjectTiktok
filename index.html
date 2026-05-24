@@ -1,20 +1,373 @@
 <!DOCTYPE html>
-<html>
-<body>
-    <input id="url" placeholder="Masukkan URL TikTok...">
-    <button onclick="download()">Download</button>
-    <script>
-        async function download() {
-            const url = document.getElementById('url').value;
-            const res = await fetch('/api/download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-            const data = await res.json();
-            if(data.download_link) location.href = data.download_link;
-            else alert('Gagal ambil data');
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Vortex TikTok Downloader - Video & MP3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    </script>
+        body {
+            background: linear-gradient(145deg, #0B0C10 0%, #1A1A2E 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            max-width: 550px;
+            width: 100%;
+            background: rgba(22, 22, 40, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 42px;
+            padding: 28px 22px 38px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+            transition: all 0.2s;
+            border: 1px solid rgba(255,45,117,0.3);
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FF2D75, #FFB347);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        .sub {
+            text-align: center;
+            color: #B0B3D0;
+            font-size: 0.85rem;
+            margin-bottom: 28px;
+            font-weight: 500;
+            border-bottom: 1px dashed rgba(255,255,255,0.2);
+            display: inline-block;
+            width: auto;
+            margin-left: auto;
+            margin-right: auto;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            background: #0F0F1A;
+            border-radius: 60px;
+            display: flex;
+            overflow: hidden;
+            border: 1px solid #2C2C42;
+            margin-bottom: 22px;
+            transition: 0.2s;
+        }
+        .input-group:focus-within {
+            border-color: #FF2D75;
+            box-shadow: 0 0 0 3px rgba(255,45,117,0.2);
+        }
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 16px 22px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            font-weight: 500;
+        }
+        input::placeholder {
+            color: #5A5B7A;
+            font-weight: 400;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 12px;
+            background: #0B0B14;
+            padding: 8px;
+            border-radius: 60px;
+            margin-bottom: 24px;
+            border: 1px solid #2A2A3C;
+        }
+        .mode-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 8px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            background: transparent;
+            color: #A0A3C0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .mode-btn.active {
+            background: #FF2D75;
+            color: white;
+            box-shadow: 0 5px 12px rgba(255,45,117,0.3);
+        }
+        .mode-btn:active {
+            transform: scale(0.97);
+        }
+        button.download-btn {
+            width: 100%;
+            background: linear-gradient(90deg, #FF2D75, #FF5E9E);
+            border: none;
+            padding: 16px;
+            border-radius: 60px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 10px 20px -5px rgba(255,45,117,0.4);
+            margin-bottom: 22px;
+        }
+        button.download-btn:active {
+            transform: scale(0.97);
+        }
+        .loading {
+            text-align: center;
+            background: #11111E;
+            border-radius: 30px;
+            padding: 16px;
+            margin-top: 15px;
+            color: #FFB347;
+            font-weight: 500;
+        }
+        .result-box {
+            margin-top: 20px;
+            background: #0C0C16;
+            border-radius: 30px;
+            padding: 18px;
+            border: 1px solid #2C2C44;
+        }
+        video {
+            width: 100%;
+            max-height: 420px;
+            border-radius: 24px;
+            background: black;
+            margin-bottom: 12px;
+            outline: none;
+        }
+        .info-meta {
+            font-size: 0.8rem;
+            color: #B8B9D6;
+            margin: 12px 0;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .direct-link {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .btn-dl {
+            flex: 1;
+            background: #2E2E48;
+            text-align: center;
+            padding: 12px;
+            border-radius: 50px;
+            text-decoration: none;
+            color: white;
+            font-weight: 600;
+            transition: 0.15s;
+            border: 0.5px solid #5A5B89;
+        }
+        .btn-dl.primary {
+            background: #00C853;
+            border: none;
+        }
+        .btn-dl.audio {
+            background: #FF9500;
+        }
+        .error {
+            background: rgba(255,45,85,0.2);
+            color: #FF9E9E;
+            padding: 16px;
+            border-radius: 30px;
+            text-align: center;
+            border-left: 4px solid #FF2D55;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.65rem;
+            margin-top: 24px;
+            color: #5A5B7A;
+        }
+        @media (max-width: 480px) {
+            .card { padding: 20px 16px 28px; }
+            .mode-btn { font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>🎬 VORTEX TikTok</h1>
+    <div style="text-align: center"><span class="sub">Downloader • No Watermark</span></div>
+
+    <!-- Pilihan Mode: Video atau MP3 -->
+    <div class="mode-selector" id="modeSelector">
+        <div class="mode-btn active" data-mode="video">
+            🎥 Video (No WM)
+        </div>
+        <div class="mode-btn" data-mode="audio">
+            🎵 MP3 (Audio Only)
+        </div>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="tiktokUrl" placeholder="Tempel URL TikTok disini... (vt.tiktok.com / tiktok.com/@...)" spellcheck="false">
+    </div>
+    
+    <button class="download-btn" id="actionBtn">✨ Proses & Download</button>
+    
+    <div id="loadingArea" style="display: none;">
+        <div class="loading">⏳ Sedang memproses, tunggu sebentar...</div>
+    </div>
+    
+    <div id="resultArea"></div>
+    <footer>⚡ Proxy server multi-API | Video HD + MP3 | Tanpa watermark</footer>
+</div>
+
+<script>
+    // ========== LOGIC ==========
+    let currentMode = "video";   // "video" atau "audio"
+    
+    // Pilihan mode (Video / MP3)
+    const modeBtns = document.querySelectorAll(".mode-btn");
+    const urlInput = document.getElementById("tiktokUrl");
+    const actionBtn = document.getElementById("actionBtn");
+    const loadingDiv = document.getElementById("loadingArea");
+    const resultDiv = document.getElementById("resultArea");
+    
+    // Event listener mode selector
+    modeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            modeBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentMode = btn.getAttribute("data-mode");
+            
+            // sedikit sentuhan UI
+            if(currentMode === "audio") {
+                actionBtn.innerHTML = "🎵 Convert ke MP3 & Download";
+            } else {
+                actionBtn.innerHTML = "🎥 Download Video (Tanpa Watermark)";
+            }
+            // reset hasil ketika ganti mode biar ga bingung
+            resultDiv.innerHTML = "";
+        });
+    });
+    
+    // Tombol utama
+    actionBtn.addEventListener("click", async () => {
+        const url = urlInput.value.trim();
+        if (!url) {
+            alert("⚠️ Masukkan URL TikTok dulu!");
+            return;
+        }
+        
+        // Tampilkan loading
+        loadingDiv.style.display = "block";
+        resultDiv.innerHTML = "";
+        
+        try {
+            // Panggil backend proxy kita (api/download.js) dengan mode
+            const response = await fetch("/api/download", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    url: url,
+                    mode: currentMode   // kirim informasi mau video atau audio
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success || !data.download_url) {
+                throw new Error(data.message || "Gagal mengambil data dari server");
+            }
+            
+            // Jika sukses tampilkan berdasarkan mode
+            if (currentMode === "video") {
+                showVideoResult(data);
+            } else {
+                showAudioResult(data);
+            }
+            
+        } catch (err) {
+            resultDiv.innerHTML = `<div class="error">❌ Gagal: ${err.message}<br><br>💡 Coba URL lain atau cek koneksi</div>`;
+        } finally {
+            loadingDiv.style.display = "none";
+        }
+    });
+    
+    // Tampilkan hasil VIDEO + preview player + link download
+    function showVideoResult(data) {
+        const videoUrl = data.download_url;
+        const title = data.title || "TikTok Video";
+        const likes = data.stats?.likes || "?";
+        const comments = data.stats?.comments || "?";
+        
+        let html = `
+            <div class="result-box">
+                <div style="font-weight: 600; margin-bottom: 10px;">🎬 ${escapeHtml(title.substring(0, 70))}</div>
+                <video src="${videoUrl}" controls controlsList="nodownload" poster="${data.thumbnail || ""}" style="width:100%; border-radius:20px;"></video>
+                <div class="info-meta">
+                    <span>❤️ ${likes}</span>  <span>💬 ${comments}</span>  <span>📥 HD No WM</span>
+                </div>
+                <div class="direct-link">
+                    <a href="${videoUrl}" download class="btn-dl primary">⬇️ Download Video (MP4)</a>
+                </div>
+                <div style="font-size: 12px; margin-top: 12px; opacity:0.7;">🔗 langsung dari server proxy, kualitas terbaik</div>
+            </div>
+        `;
+        resultDiv.innerHTML = html;
+    }
+    
+    // Tampilkan hasil AUDIO (MP3) tanpa video preview
+    function showAudioResult(data) {
+        const audioUrl = data.download_url;
+        const title = data.title || "TikTok Audio";
+        const musician = data.author || "TikToker";
+        
+        let html = `
+            <div class="result-box">
+                <div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 5px;">🎧 ${escapeHtml(title.substring(0, 55))}</div>
+                <div style="font-size: 0.8rem; margin-bottom: 20px;">🎤 ${escapeHtml(musician)}</div>
+                
+                <!-- Audio player sederhana -->
+                <audio controls style="width: 100%; margin-bottom: 18px;" src="${audioUrl}"></audio>
+                
+                <div class="direct-link">
+                    <a href="${audioUrl}" download class="btn-dl audio">🎵 Download MP3 (Audio Only)</a>
+                </div>
+                <div style="font-size: 12px; margin-top: 14px;">✨ Tanpa watermark, ekstrak langsung dari video TikTok</div>
+            </div>
+        `;
+        resultDiv.innerHTML = html;
+    }
+    
+    // helper biar aman dari XSS
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+</script>
 </body>
 </html>
