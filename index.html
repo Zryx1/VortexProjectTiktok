@@ -1,0 +1,36 @@
+async function downloadVideo() {
+    const url = document.getElementById('urlInput').value;
+    
+    if (!url) {
+        alert('Masukkan URL TikTok dulu!');
+        return;
+    }
+    
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('result').innerHTML = '';
+    
+    try {
+        // Panggil proxy Vercel-mu sendiri (bukan langsung ke TikWM)
+        const response = await fetch('/api/tiktok', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        });
+        
+        const result = await response.json();
+        
+        if (result.code !== 0) {
+            throw new Error('Gagal mengambil data');
+        }
+        
+        const data = result.data;
+        // ... lanjutkan render hasil seperti kode sebelumnya
+        displayResult(data);
+        
+    } catch (error) {
+        document.getElementById('result').innerHTML = 
+            `<div class="error">❌ Error: ${error.message}</div>`;
+    } finally {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
