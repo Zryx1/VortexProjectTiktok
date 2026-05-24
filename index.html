@@ -1,142 +1,20 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Downloader - Vortex</title>
-    <style>
-        body {
-            font-family: system-ui, Arial, sans-serif;
-            background: #0a0a12;
-            padding: 20px;
-            color: white;
-            text-align: center;
-        }
-        .box {
-            max-width: 550px;
-            margin: 50px auto;
-            background: #18182a;
-            padding: 25px;
-            border-radius: 28px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        }
-        h1 { font-size: 28px; margin-bottom: 5px; color: #ff2d75; }
-        input {
-            width: 85%;
-            padding: 14px;
-            border-radius: 50px;
-            border: none;
-            margin: 20px 0 12px;
-            font-size: 15px;
-            background: #2a2a3a;
-            color: white;
-            text-align: center;
-        }
-        button {
-            background: #ff2d75;
-            color: white;
-            padding: 14px 32px;
-            border: none;
-            border-radius: 50px;
-            font-size: 17px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:active { transform: scale(0.96); }
-        .loading {
-            margin-top: 20px;
-            color: #ffaa44;
-            font-size: 14px;
-        }
-        .result {
-            margin-top: 25px;
-            background: #202033;
-            padding: 18px;
-            border-radius: 20px;
-        }
-        video {
-            width: 100%;
-            max-height: 500px;
-            border-radius: 18px;
-            margin-top: 10px;
-            background: black;
-        }
-        .btn {
-            display: inline-block;
-            background: #00c853;
-            color: white;
-            padding: 10px 22px;
-            margin: 12px 6px;
-            border-radius: 40px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .btn-audio { background: #ff9800; }
-        .error {
-            background: #4a0000;
-            color: #ff9e9e;
-            padding: 12px;
-            border-radius: 18px;
-        }
-        footer { font-size: 11px; margin-top: 25px; opacity: 0.6; }
-    </style>
-</head>
+<html>
 <body>
-<div class="box">
-    <h1>⚡ Vortex TikTok Downloader</h1>
-    <p>Download Video & Audio (No Watermark)</p>
-    <input type="text" id="urlInput" placeholder="Masukkan URL TikTok...">
-    <br>
-    <button onclick="downloadTikTok()">🔓 Download Sekarang</button>
-    <div id="loading" class="loading" style="display:none;">⏳ Sedang memproses...</div>
-    <div id="result"></div>
-    <footer>Menggunakan API TikDown | Tanpa watermark</footer>
-</div>
-
-<script>
-async function downloadTikTok() {
-    const url = document.getElementById('urlInput').value.trim();
-    if (!url) {
-        alert("Masukkan URL TikTok dulu!");
-        return;
-    }
-    
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('result').innerHTML = '';
-    
-    try {
-        // Pake API TikDown (masih stabil)
-        const apiEndpoint = `https://api.tikdown.org/api/download?url=${encodeURIComponent(url)}`;
-        
-        const response = await fetch(apiEndpoint);
-        const data = await response.json();
-        
-        if (!data.success || !data.data) {
-            throw new Error("Gagal dapet video, cek URL nya!");
+    <input id="url" placeholder="Masukkan URL TikTok...">
+    <button onclick="download()">Download</button>
+    <script>
+        async function download() {
+            const url = document.getElementById('url').value;
+            const res = await fetch('/api/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            const data = await res.json();
+            if(data.download_link) location.href = data.download_link;
+            else alert('Gagal ambil data');
         }
-        
-        const videoUrl = data.data.video;
-        const audioUrl = data.data.music;
-        const title = data.data.title || "TikTok Video";
-        const thumbnail = data.data.cover || "";
-        
-        let html = `
-            <div class="result">
-                <strong>📌 ${title.substring(0, 65)}</strong><br>
-                <video src="${videoUrl}" controls controlsList="nodownload" poster="${thumbnail}"></video><br>
-                <a class="btn" href="${videoUrl}" download>📥 Download Video (No WM)</a>
-                <a class="btn btn-audio" href="${audioUrl}" download>🎵 Download Audio (MP3)</a>
-                <p style="font-size: 13px; margin-top: 12px;">✅ Langsung klik tombol download</p>
-            </div>
-        `;
-        document.getElementById('result').innerHTML = html;
-    } catch (err) {
-        document.getElementById('result').innerHTML = `<div class="error">❌ Gagal: ${err.message}<br><br>💡 Coba lagi atau ganti URL TikTok yang lain</div>`;
-    } finally {
-        document.getElementById('loading').style.display = 'none';
-    }
-}
-</script>
+    </script>
 </body>
 </html>
