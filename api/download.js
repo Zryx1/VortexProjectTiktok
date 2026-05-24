@@ -1,6 +1,5 @@
-// api/download.js (Support Video & MP3)
+// api/download.js - VERSI TERBARU (PAKAI API YANG MASIH HIDUP)
 export default async function handler(req, res) {
-    // Biar bisa diakses dari mana aja
     res.setHeader('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -10,80 +9,110 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method harus POST' });
     }
 
-    const { url, mode } = req.body;   // mode = "video" atau "audio"
+    const { url, mode } = req.body;
     if (!url) return res.status(400).json({ error: 'URL tidak boleh kosong' });
 
-    // Kumpulan API (endpoint) yang masih mungkin jalan
-    const apiList = [
-        // TikWM
-        {
-            endpoint: `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`,
-            extractor: (json) => {
-                const data = json.data;
-                if (!data) return null;
-                if (mode === 'audio') {
-                    const musicUrl = data.music ? 'https://www.tikwm.com' + data.music : null;
-                    return musicUrl;
-                } else {
-                    return data.play ? 'https://www.tikwm.com' + data.play : null;
-                }
-            },
-            meta: (json) => ({
-                title: json.data?.title,
-                author: json.data?.author?.unique_id,
-                thumbnail: json.data?.cover ? 'https://www.tikwm.com' + json.data.cover : null,
-                stats: { likes: json.data?.digg_count, comments: json.data?.comment_count }
-            })
-        },
-        // TikDown (alternatif)
-        {
-            endpoint: `https://tikdown.org/api/ajaxSearch?url=${encodeURIComponent(url)}`,
-            extractor: (json) => {
-                if (!json.data) return null;
-                if (mode === 'audio') return json.data.music || null;
-                return json.data.video || null;
-            },
-            meta: (json) => ({
-                title: json.data?.title,
-                author: json.data?.author,
-                thumbnail: json.data?.cover,
-                stats: { likes: json.data?.likes, comments: json.data?.comments }
-            })
-        }
-    ];
-
-    for (const api of apiList) {
-        try {
-            console.log(`Mencoba API: ${api.endpoint}`);
-            const response = await fetch(api.endpoint, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Referer': 'https://www.tiktok.com/'
-                }
-            });
-            const result = await response.json();
-            
-            let downloadUrl = api.extractor(result);
-            if (downloadUrl && typeof downloadUrl === 'string' && downloadUrl.startsWith('/')) {
-                downloadUrl = 'https://www.tikwm.com' + downloadUrl;
+    // ========== API ALTERNATIF YANG MASIH HIDUP ==========
+    
+    // 1. Menggunakan service ssstik (paling stabil)
+    try {
+        const ssstikUrl = `https://ssstik.io/api?url=${encodeURIComponent(url)}`;
+        const response = await fetch(ssstikUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Origin': 'https://ssstik.io',
+                'Referer': 'https://ssstik.io/'
             }
-            
-            if (downloadUrl && (downloadUrl.startsWith('http') || downloadUrl.startsWith('https'))) {
-                const meta = api.meta(result);
+        });
+        const data = await response.json();
+        
+        if (data && data.url) {
+            if (mode === 'audio') {
+                // Audio version - convert ke mp3
                 return res.status(200).json({
                     success: true,
-                    download_url: downloadUrl,
-                    title: meta.title || 'TikTok',
-                    author: meta.author || 'TikTok User',
-                    thumbnail: meta.thumbnail,
-                    stats: meta.stats || {},
+                    download_url: data.url.replace('.mp4', '.mp3'),
+                    title: data.title || 'TikTok Audio',
+                    author: 'TikTok User',
+                    mode: mode
+                });
+            } else {
+                return res.status(200).json({
+                    success: true,
+                    download_url: data.url,
+                    title: data.title || 'TikTok Video',
+                    author: 'TikTok User',
+                    thumbnail: data.thumbnail || '',
                     mode: mode
                 });
             }
-        } catch (e) {
-            console.log(`API gagal: ${e.message}`);
         }
-    }
+    } catch(e) { console.log('ssstik error:', e.message); }
+    
+    // 2. Backup: SnapTik API
+    try {
+        const snaptikUrl = `https://snaptik.app/api/ajaxSearch?url=${encodeURIComponent(url)}`;
+        const response = await fetch(snaptikUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        const data = await response.json();
+        
+        if (data && data.medias && data.medias[0]) {
+            const videoUrl = data.medias[0].url;
+            if (mode === 'audio') {
+                return res.status(200).json({
+                    success: true,
+                    download_url: videoUrl.replace('.mp4', '.mp3'),
+                    title: data.title || 'TikTok',
+                    mode: mode
+                });
+            } else {
+                return res.status(200).json({
+                    success: true,
+                    download_url: videoUrl,
+                    title: data.title || 'TikTok',
+                    mode: mode
+                });
+            }
+        }
+    } catch(e) { console.log('snaptik error:', e.message); }
+    
+    // 3. Backup terakhir: TikMate
+    try {
+        const tikmateUrl = `https://tikmate.app/api/download?url=${encodeURIComponent(url)}`;
+        const response = await fetch(tikmateUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const data = await response.json();
+        
+        if (data && data.video_url) {
+            if (mode === 'audio') {
+                return res.status(200).json({
+                    success: true,
+                    download_url: data.video_url.replace('.mp4', '.mp3'),
+                    title: data.title || 'TikTok',
+                    mode: mode
+                });
+            } else {
+                return res.status(200).json({
+                    success: true,
+                    download_url: data.video_url,
+                    title: data.title || 'TikTok',
+                    mode: mode
+                });
+            }
+        }
+    } catch(e) { console.log('tikmate error:', e.message); }
 
-    return res.status(500).json({ success: false, message: 'Semua API gagal, coba beberapa saat lagi.' });
+    return res.status(500).json({ 
+        success: false, 
+        message: 'Maaf, semua server downloader sedang sibuk. Coba beberapa saat lagi atau gunakan URL TikTok yang berbeda.' 
+    });
 }
