@@ -1,40 +1,89 @@
-// api/download.js
+// api/download.js (Support Video & MP3)
 export default async function handler(req, res) {
-    // 1. Biar gak kena Cors
+    // Biar bisa diakses dari mana aja
     res.setHeader('Access-Control-Allow-Origin', '*');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method salah' });
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        return res.status(200).end();
+    }
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method harus POST' });
+    }
 
-    const { url } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL kosong' });
+    const { url, mode } = req.body;   // mode = "video" atau "audio"
+    if (!url) return res.status(400).json({ error: 'URL tidak boleh kosong' });
 
-    // 2. Daftar API TikTok yang masih mungkin idup
-    const apis = [
-        `https://tikdown.org/api/ajaxSearch?url=${encodeURIComponent(url)}`,
-        `https://api.tikmate.app/api/lookup?url=${encodeURIComponent(url)}`,
-        `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`
+    // Kumpulan API (endpoint) yang masih mungkin jalan
+    const apiList = [
+        // TikWM
+        {
+            endpoint: `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`,
+            extractor: (json) => {
+                const data = json.data;
+                if (!data) return null;
+                if (mode === 'audio') {
+                    const musicUrl = data.music ? 'https://www.tikwm.com' + data.music : null;
+                    return musicUrl;
+                } else {
+                    return data.play ? 'https://www.tikwm.com' + data.play : null;
+                }
+            },
+            meta: (json) => ({
+                title: json.data?.title,
+                author: json.data?.author?.unique_id,
+                thumbnail: json.data?.cover ? 'https://www.tikwm.com' + json.data.cover : null,
+                stats: { likes: json.data?.digg_count, comments: json.data?.comment_count }
+            })
+        },
+        // TikDown (alternatif)
+        {
+            endpoint: `https://tikdown.org/api/ajaxSearch?url=${encodeURIComponent(url)}`,
+            extractor: (json) => {
+                if (!json.data) return null;
+                if (mode === 'audio') return json.data.music || null;
+                return json.data.video || null;
+            },
+            meta: (json) => ({
+                title: json.data?.title,
+                author: json.data?.author,
+                thumbnail: json.data?.cover,
+                stats: { likes: json.data?.likes, comments: json.data?.comments }
+            })
+        }
     ];
 
-    for (let api of apis) {
+    for (const api of apiList) {
         try {
-            console.log(`Mencoba: ${api}`);
-            const response = await fetch(api, {
-                headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://google.com' }
+            console.log(`Mencoba API: ${api.endpoint}`);
+            const response = await fetch(api.endpoint, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Referer': 'https://www.tiktok.com/'
+                }
             });
             const result = await response.json();
             
-            // Parsing hasil
-            let download_link = result.data?.play || result.videoUrl || result.images?.[0];
-            if (download_link) {
-                if (!download_link.startsWith('http')) download_link = 'https://www.tikwm.com' + download_link;
-                return res.status(200).json({ 
-                    success: true, 
-                    download_link: download_link,
-                    message: 'Berhasil ambil video!'
+            let downloadUrl = api.extractor(result);
+            if (downloadUrl && typeof downloadUrl === 'string' && downloadUrl.startsWith('/')) {
+                downloadUrl = 'https://www.tikwm.com' + downloadUrl;
+            }
+            
+            if (downloadUrl && (downloadUrl.startsWith('http') || downloadUrl.startsWith('https'))) {
+                const meta = api.meta(result);
+                return res.status(200).json({
+                    success: true,
+                    download_url: downloadUrl,
+                    title: meta.title || 'TikTok',
+                    author: meta.author || 'TikTok User',
+                    thumbnail: meta.thumbnail,
+                    stats: meta.stats || {},
+                    mode: mode
                 });
             }
-        } catch (e) { console.log(`Gagal: ${e.message}`); }
+        } catch (e) {
+            console.log(`API gagal: ${e.message}`);
+        }
     }
-    
-    res.status(500).json({ error: 'Semua API gagal, coba lagi nanti' });
+
+    return res.status(500).json({ success: false, message: 'Semua API gagal, coba beberapa saat lagi.' });
 }
