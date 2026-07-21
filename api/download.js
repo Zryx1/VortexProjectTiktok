@@ -1,17 +1,74 @@
-// api/download.js - Versi Gabungan dengan tiktok.js
+// api/download.js - Versi diperbaiki, multi-source fallback
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-const YUULABS_API = "https://api.yuulabs.web.id/api/downloader/tiktok?url=";
 const REQUEST_HEADERS = {
   "user-agent":
     "Mozilla/5.0 (Linux; Android 15; SM-F958 Build/AP3A.240905.015) AppleWebKit/537.36 (Chrome) Mobile Safari/537.36",
 };
 
-// ========== FUNGSI DARI YUULABS ==========
+// ========== SUMBER #1: TIKWM (paling stabil, dipakai luas & gratis) ==========
+async function ttdownFromTikwm(url) {
+  const { data } = await axios.get("https://www.tikwm.com/api/", {
+    params: { url, hd: 1 },
+    timeout: 20000,
+    headers: REQUEST_HEADERS,
+  });
+
+  if (data?.code !== 0 || !data?.data) {
+    throw new Error(data?.msg || "TikWM response invalid");
+  }
+
+  const result = data.data;
+  const downloads = [];
+
+  if (result.play) {
+    downloads.push({
+      type: "nowatermark",
+      label: "Video tanpa watermark",
+      url: result.play.startsWith("http") ? result.play : `https://www.tikwm.com${result.play}`,
+    });
+  }
+
+  if (result.hdplay) {
+    downloads.push({
+      type: "nowatermark_hd",
+      label: "Video HD",
+      url: result.hdplay.startsWith("http") ? result.hdplay : `https://www.tikwm.com${result.hdplay}`,
+    });
+  }
+
+  if (result.music) {
+    downloads.push({
+      type: "mp3",
+      label: "Audio MP3",
+      url: result.music.startsWith("http") ? result.music : `https://www.tikwm.com${result.music}`,
+    });
+  }
+
+  if (downloads.length === 0) {
+    throw new Error("TikWM tidak mengembalikan link download");
+  }
+
+  return {
+    title: result.title || "",
+    author: result.author?.unique_id || result.author?.nickname || "",
+    cover: result.cover || result.origin_cover || null,
+    stats: {
+      likes: result.digg_count ?? null,
+      comments: result.comment_count ?? null,
+      shares: result.share_count ?? null,
+      plays: result.play_count ?? null,
+    },
+    downloads,
+  };
+}
+
+// ========== SUMBER #2: YUULABS ==========
 async function ttdownFromYuuLabs(url) {
+  const YUULABS_API = "https://api.yuulabs.web.id/api/downloader/tiktok?url=";
   const { data } = await axios.get(`${YUULABS_API}${encodeURIComponent(url)}`, {
-    timeout: 30000,
+    timeout: 20000,
     headers: REQUEST_HEADERS,
   });
 
@@ -23,27 +80,13 @@ async function ttdownFromYuuLabs(url) {
   const downloads = [];
 
   if (result.videoUrl) {
-    downloads.push({
-      type: "nowatermark",
-      label: "Video tanpa watermark",
-      url: result.videoUrl,
-    });
+    downloads.push({ type: "nowatermark", label: "Video tanpa watermark", url: result.videoUrl });
   }
-
   if (result.hdVideo) {
-    downloads.push({
-      type: "nowatermark_hd",
-      label: "Video HD",
-      url: result.hdVideo,
-    });
+    downloads.push({ type: "nowatermark_hd", label: "Video HD", url: result.hdVideo });
   }
-
   if (result.audioUrl) {
-    downloads.push({
-      type: "mp3",
-      label: "Audio MP3",
-      url: result.audioUrl,
-    });
+    downloads.push({ type: "mp3", label: "Audio MP3", url: result.audioUrl });
   }
 
   if (downloads.length === 0) {
@@ -54,19 +97,17 @@ async function ttdownFromYuuLabs(url) {
     title: result.description || "",
     author: result.author || "",
     cover: null,
+    stats: null,
     downloads,
   };
 }
 
-// ========== FUNGSI DARI MUSICALDOWN ==========
+// ========== SUMBER #3: MUSICALDOWN (scraping, fallback terakhir) ==========
 async function ttdownFromMusicalDown(url) {
-  const { data: html, headers } = await axios.get(
-    "https://musicaldown.com/en",
-    {
-      timeout: 30000,
-      headers: REQUEST_HEADERS,
-    }
-  );
+  const { data: html, headers } = await axios.get("https://musicaldown.com/en", {
+    timeout: 20000,
+    headers: REQUEST_HEADERS,
+  });
   const $ = cheerio.load(html);
 
   const payload = {};
@@ -79,15 +120,13 @@ async function ttdownFromMusicalDown(url) {
   const urlField = Object.keys(payload).find((key) => !payload[key]);
   if (urlField) payload[urlField] = url;
 
-  const cookieHeader = Array.isArray(headers["set-cookie"])
-    ? headers["set-cookie"].join("; ")
-    : "";
+  const cookieHeader = Array.isArray(headers["set-cookie"]) ? headers["set-cookie"].join("; ") : "";
 
   const { data } = await axios.post(
     "https://musicaldown.com/download",
     new URLSearchParams(payload).toString(),
     {
-      timeout: 30000,
+      timeout: 20000,
       headers: {
         ...REQUEST_HEADERS,
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -110,11 +149,7 @@ async function ttdownFromMusicalDown(url) {
     const label = $elem.text().trim();
     const downloadUrl = $elem.attr("href");
     if (!downloadUrl) return;
-    downloads.push({
-      type,
-      label,
-      url: downloadUrl,
-    });
+    downloads.push({ type, label, url: downloadUrl });
   });
 
   if (downloads.length === 0) {
@@ -125,86 +160,101 @@ async function ttdownFromMusicalDown(url) {
     title: $$(".video-desc").text().trim(),
     author: $$(".video-author b").text().trim(),
     cover: coverMatch ? coverMatch[1] : null,
+    stats: null,
     downloads,
   };
 }
 
-// ========== FUNGSI UTAMA ==========
+// ========== FUNGSI UTAMA: coba tiap sumber berurutan ==========
 async function ttdown(url) {
-  if (!url.includes("tiktok.com")) throw new Error("Invalid url.");
-  try {
-    return await ttdownFromYuuLabs(url);
-  } catch (error) {
-    console.log("YuuLabs gagal, mencoba MusicalDown...", error.message);
-    return await ttdownFromMusicalDown(url);
+  if (!url.includes("tiktok.com")) throw new Error("URL bukan link TikTok yang valid.");
+
+  const sources = [
+    { name: "TikWM", fn: ttdownFromTikwm },
+    { name: "YuuLabs", fn: ttdownFromYuuLabs },
+    { name: "MusicalDown", fn: ttdownFromMusicalDown },
+  ];
+
+  let lastError = null;
+  for (const source of sources) {
+    try {
+      return await source.fn(url);
+    } catch (error) {
+      lastError = error;
+      console.log(`${source.name} gagal: ${error.message}`);
+    }
   }
+
+  throw new Error(lastError?.message || "Semua sumber download gagal diakses");
 }
 
 // ========== HANDLER UNTUK VERCEL ==========
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  // Set CORS headers (lengkap, termasuk untuk preflight JSON POST)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
-  
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method harus POST' });
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, message: "Method harus POST" });
   }
 
-  const { url, mode } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: 'URL tidak boleh kosong' });
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = {};
+    }
+  }
+
+  const { url, mode } = body || {};
+  if (!url || typeof url !== "string") {
+    return res.status(400).json({ success: false, message: "URL tidak boleh kosong" });
   }
 
   try {
-    const result = await ttdown(url);
-    
-    // Cari link yang sesuai dengan mode yang diminta
+    const result = await ttdown(url.trim());
+
     let downloadUrl = null;
-    let type = "";
-    
+
     if (mode === "audio") {
-      const audio = result.downloads.find(d => d.type === "mp3");
-      if (audio) {
-        downloadUrl = audio.url;
-        type = "audio";
-      }
+      const audio = result.downloads.find((d) => d.type === "mp3");
+      if (audio) downloadUrl = audio.url;
     } else {
-      // Mode video: cari HD dulu, baru no watermark
-      const video = result.downloads.find(d => d.type === "nowatermark_hd") ||
-                    result.downloads.find(d => d.type === "nowatermark");
-      if (video) {
-        downloadUrl = video.url;
-        type = "video";
-      }
+      const video =
+        result.downloads.find((d) => d.type === "nowatermark_hd") ||
+        result.downloads.find((d) => d.type === "nowatermark");
+      if (video) downloadUrl = video.url;
     }
-    
+
     if (!downloadUrl) {
-      // Kalau ga nemu sesuai mode, ambil yang pertama aja
       downloadUrl = result.downloads[0]?.url;
     }
-    
+
     if (!downloadUrl) {
       throw new Error("Tidak ada link download yang ditemukan");
     }
-    
+
     return res.status(200).json({
       success: true,
       download_url: downloadUrl,
       title: result.title || "TikTok",
       author: result.author || "TikTok User",
       thumbnail: result.cover || "",
-      all_downloads: result.downloads, // opsional: kasih semua pilihan
-      mode: mode || "video"
+      stats: result.stats || null,
+      all_downloads: result.downloads,
+      mode: mode || "video",
     });
-    
   } catch (error) {
     console.error("Error:", error.message);
     return res.status(500).json({
       success: false,
-      message: error.message || "Gagal memproses video"
+      message: error.message || "Gagal memproses video. Coba URL lain atau coba lagi nanti.",
     });
   }
 }
