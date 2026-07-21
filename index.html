@@ -408,8 +408,8 @@
         const title = data.title || "TikTok Video";
         const author = data.author || "TikTok User";
         const avatar = data.thumbnail || "https://ui-avatars.com/api/?background=7c3aed&color=fff&name=" + encodeURIComponent(author);
-        const likes = data.stats?.likes || "❤️ ?";
-        const comments = data.stats?.comments || "💬 ?";
+        const likes = formatCount(data.stats?.likes);
+        const comments = formatCount(data.stats?.comments);
         
         let html = `
             <div class="result-box">
@@ -456,6 +456,15 @@
         resultDiv.innerHTML = html;
     }
     
+    function formatCount(n) {
+        if (n === null || n === undefined) return "?";
+        n = Number(n);
+        if (isNaN(n)) return "?";
+        if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+        return String(n);
+    }
+
     function escapeHtml(str) {
         if (!str) return "";
         return str.replace(/[&<>]/g, function(m) {
