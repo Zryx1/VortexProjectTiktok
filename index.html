@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Vortex TikTok Downloader</title>
+    <title>Vortex TikTok Downloader | Video & MP3</title>
     <style>
         * {
             margin: 0;
@@ -289,6 +289,51 @@
             transform: scale(0.97);
         }
 
+        .quality-selector {
+            display: flex;
+            gap: 10px;
+            margin: -8px 0 16px;
+        }
+
+        .quality-btn {
+            flex: 1;
+            text-align: center;
+            padding: 9px 8px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            background: #17172a;
+            color: #b1b1d1;
+            transition: all 0.2s ease;
+        }
+
+        .quality-btn.active {
+            background: linear-gradient(95deg, #7c3aed, #a855f7);
+            color: white;
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+        }
+
+        .hd-badge {
+            display: inline-block;
+            background: linear-gradient(95deg, #7c3aed, #a855f7);
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 20px;
+            vertical-align: middle;
+            margin-left: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .hd-note {
+            font-size: 0.72rem;
+            color: #8a8ab0;
+            margin-top: 12px;
+            text-align: center;
+        }
+
         .error {
             background: rgba(255, 45, 85, 0.12);
             color: #ffa7b5;
@@ -404,18 +449,45 @@
     });
     
     function showVideoResult(data) {
-        const videoUrl = data.download_url;
         const title = data.title || "TikTok Video";
         const author = data.author || "TikTok User";
         const avatar = data.thumbnail || "https://ui-avatars.com/api/?background=7c3aed&color=fff&name=" + encodeURIComponent(author);
         const likes = formatCount(data.stats?.likes);
         const comments = formatCount(data.stats?.comments);
-        
+
+        // Kumpulkan semua opsi kualitas video yang tersedia dari server
+        const videoOptions = (data.all_downloads || []).filter(
+            d => d.type === "nowatermark_hd" || d.type === "nowatermark"
+        );
+        // Kalau backend tidak sediakan daftar, pakai download_url utama saja
+        if (videoOptions.length === 0) {
+            videoOptions.push({ type: "nowatermark", label: "Video", url: data.download_url });
+        }
+        // HD duluan
+        videoOptions.sort((a, b) => (a.type === "nowatermark_hd" ? -1 : 1) - (b.type === "nowatermark_hd" ? -1 : 1));
+
+        const defaultVideo = videoOptions[0];
+        const hasHd = videoOptions.some(v => v.type === "nowatermark_hd");
+
+        let qualityButtons = "";
+        if (videoOptions.length > 1) {
+            qualityButtons = `
+                <div class="quality-selector" id="qualitySelector">
+                    ${videoOptions.map((v, i) => `
+                        <div class="quality-btn ${i === 0 ? "active" : ""}" data-url="${v.url}" data-index="${i}">
+                            ${v.type === "nowatermark_hd" ? "🌟 HD" : "📱 Normal"}
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+        }
+
         let html = `
             <div class="result-box">
-                <video src="${videoUrl}" controls autoplay loop playsinline poster="${data.thumbnail || ""}"></video>
+                <video id="resultVideo" src="${defaultVideo.url}" controls autoplay loop playsinline poster="${data.thumbnail || ""}"></video>
+                ${qualityButtons}
                 <div class="video-info">
-                    <div class="video-title">✨ ${escapeHtml(title.substring(0, 80))}</div>
+                    <div class="video-title">✨ ${escapeHtml(title.substring(0, 80))} ${hasHd ? '<span class="hd-badge">HD</span>' : ""}</div>
                     <div class="author-stats">
                         <div class="author">
                             <img class="author-avatar" src="${avatar}" onerror="this.src='https://ui-avatars.com/api/?background=7c3aed&color=fff&name=?'">
@@ -426,13 +498,28 @@
                             <span>💬 ${comments}</span>
                         </div>
                     </div>
-                    <div class="download-actions">
-                        <a class="btn-download video-btn" href="${videoUrl}" download>⬇️ Download Video (MP4)</a>
+                    <div class="download-actions" id="downloadActions">
+                        <a class="btn-download video-btn" id="downloadLink" href="${defaultVideo.url}" download>⬇️ Download Video (MP4)</a>
                     </div>
+                    ${!hasHd ? '<div class="hd-note">ℹ️ Versi HD tidak tersedia untuk video ini dari server, ini kualitas terbaik yang bisa didapat.</div>' : ""}
                 </div>
             </div>
         `;
         resultDiv.innerHTML = html;
+
+        // Ganti video & link download saat user pilih kualitas lain
+        const selector = document.getElementById("qualitySelector");
+        if (selector) {
+            selector.querySelectorAll(".quality-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    selector.querySelectorAll(".quality-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    const newUrl = btn.getAttribute("data-url");
+                    document.getElementById("resultVideo").src = newUrl;
+                    document.getElementById("downloadLink").href = newUrl;
+                });
+            });
+        }
     }
     
     function showAudioResult(data) {
