@@ -354,6 +354,44 @@
         qualityModal.classList.add("show");
     }
 
+    function getDateStamp() {
+        const d = new Date();
+        return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+    }
+
+    async function triggerDownload(url, filename, btnEl) {
+        const originalHTML = btnEl.innerHTML;
+        btnEl.style.pointerEvents = "none";
+        btnEl.style.opacity = "0.75";
+        btnEl.innerHTML = '<svg class="icon spin"><use href="#icon-loader"></use></svg> Mengunduh...';
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Gagal mengambil file dari server");
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            // Fallback: buka langsung kalau fetch gagal (mis. CORS)
+            window.open(url, "_blank");
+        } finally {
+            btnEl.innerHTML = originalHTML;
+            btnEl.style.pointerEvents = "auto";
+            btnEl.style.opacity = "1";
+        }
+    }
+
+    function pad2(n) {
+        return String(n).padStart(2, "0");
+    }
+
     modeCards.forEach(card => {
         card.addEventListener("click", () => {
             modeCards.forEach(c => c.classList.remove("active"));
@@ -441,10 +479,16 @@
                 </div>
             </div>
             <div class="cell cell-download" id="downloadActions">
-                <a class="btn-download video-btn" id="downloadLink" href="${chosenVideo.url}" download><svg class="icon"><use href="#icon-download"></use></svg> Download Video (MP4)</a>
+                <a class="btn-download video-btn" id="downloadLink" href="${chosenVideo.url}" download="video-${getDateStamp()}.mp4"><svg class="icon"><use href="#icon-download"></use></svg> Download Video (MP4)</a>
             </div>
         `;
         resultDiv.innerHTML = html;
+
+        const downloadLink = document.getElementById("downloadLink");
+        downloadLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            triggerDownload(downloadLink.href, downloadLink.getAttribute("download"), downloadLink);
+        });
     }
 
     function showAudioResult(data) {
@@ -460,10 +504,16 @@
                 <audio controls src="${audioUrl}"></audio>
             </div>
             <div class="cell cell-download">
-                <a class="btn-download audio-btn" href="${audioUrl}" download><svg class="icon"><use href="#icon-download"></use></svg> Download MP3 (Audio Only)</a>
+                <a class="btn-download audio-btn" id="downloadLinkAudio" href="${audioUrl}" download="audio-${getDateStamp()}.mp3"><svg class="icon"><use href="#icon-download"></use></svg> Download MP3 (Audio Only)</a>
             </div>
         `;
         resultDiv.innerHTML = html;
+
+        const downloadLinkAudio = document.getElementById("downloadLinkAudio");
+        downloadLinkAudio.addEventListener("click", (e) => {
+            e.preventDefault();
+            triggerDownload(downloadLinkAudio.href, downloadLinkAudio.getAttribute("download"), downloadLinkAudio);
+        });
     }
 
     function formatCount(n) {
