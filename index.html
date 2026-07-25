@@ -1,548 +1,471 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Vortex TikTok Downloader | Video & MP3</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Vortex TikTok Downloader | Video & MP3</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            background: #0a0a0f;
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Poppins', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+    body {
+        background: #08080c;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Poppins', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 24px;
+    }
 
-        /* Container utama */
-        .app-container {
-            max-width: 580px;
-            width: 100%;
-            margin: 0 auto;
-        }
+    .icon { width: 1em; height: 1em; display: inline-block; vertical-align: -0.15em; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-fill { fill: currentColor; stroke: none; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Card tanpa border, pure glassmorphism */
-        .glass-card {
-            background: linear-gradient(145deg, #0f0f1a 0%, #0a0a12 100%);
-            backdrop-filter: blur(0px);
-            border-radius: 48px;
-            padding: 28px 24px 38px;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.8), 0 0 0 0px rgba(156, 39, 176, 0);
-            transition: box-shadow 0.3s ease, transform 0.2s ease;
-        }
+    .stage { max-width: 720px; width: 100%; }
 
-        .glass-card:hover {
-            box-shadow: 0 30px 55px -15px rgba(156, 39, 176, 0.3);
-        }
+    /* Bento grid — signature element: modular cells of different sizes */
+    .bento {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: min-content;
+        gap: 14px;
+    }
 
-        /* Header dengan efek neon */
-        .neon-header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
+    .cell {
+        background: #101018;
+        border-radius: 26px;
+        padding: 20px;
+        box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.12);
+        transition: box-shadow 0.25s ease;
+    }
 
-        .neon-header h1 {
-            font-size: 2.1rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #c084fc, #a855f7, #7c3aed);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-            text-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
-            animation: shimmer 3s ease infinite;
-        }
+    .cell:hover { box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3); }
 
-        @keyframes shimmer {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+    /* Header cell */
+    .cell-header { grid-column: span 4; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, #171025, #0d0a14); flex-wrap: wrap; }
 
-        .sub {
-            text-align: center;
-            color: #a1a1b9;
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-top: 8px;
-            letter-spacing: 0.3px;
-        }
+    .brand { display: flex; align-items: center; gap: 10px; }
 
-        /* Mode selector glowing */
-        .mode-selector {
-            display: flex;
-            gap: 14px;
-            background: #0c0c14;
-            padding: 8px;
-            border-radius: 80px;
-            margin-bottom: 28px;
-        }
+    .brand-icon {
+        width: 40px; height: 40px; border-radius: 14px; flex-shrink: 0;
+        background: linear-gradient(135deg, #7c3aed, #a855f7); display: flex; align-items: center; justify-content: center; color: #fff;
+        box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+    }
 
-        .mode-btn {
-            flex: 1;
-            text-align: center;
-            padding: 12px 8px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            background: transparent;
-            color: #b1b1d1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+    .brand h1 { font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+    .brand .sub { font-size: 0.7rem; color: #7a7aa0; margin-top: 2px; }
 
-        .mode-btn.active {
-            background: linear-gradient(95deg, #7c3aed, #a855f7);
-            color: white;
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
-            transform: scale(1.02);
-        }
+    .badge-row { display: flex; gap: 8px; }
+    .pill-badge { font-size: 0.65rem; font-weight: 700; color: #c084fc; background: rgba(124, 58, 237, 0.15); padding: 6px 12px; border-radius: 999px; display: flex; align-items: center; gap: 5px; }
 
-        .mode-btn:active {
-            transform: scale(0.97);
-        }
+    /* Mode cells — two square-ish cells side by side */
+    .cell-mode {
+        grid-column: span 2;
+        display: flex; flex-direction: column; gap: 10px; cursor: pointer;
+        border: 1.5px solid transparent;
+    }
 
-        /* Input group glow effect */
-        .input-group {
-            background: #0c0c16;
-            border-radius: 60px;
-            display: flex;
-            overflow: hidden;
-            margin-bottom: 24px;
-            transition: all 0.2s;
-            box-shadow: 0 0 0 0px rgba(139, 92, 246, 0);
-        }
+    .cell-mode .mode-icon-wrap {
+        width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        background: #1a1a2a; color: #8a8ab0; transition: all 0.2s ease;
+    }
 
-        .input-group:focus-within {
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
-        }
+    .cell-mode .mode-title { font-weight: 700; color: #e0e0ff; font-size: 0.9rem; }
+    .cell-mode .mode-desc { font-size: 0.72rem; color: #6a6a94; }
 
-        input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 16px 22px;
-            color: #f0f0ff;
-            font-size: 0.9rem;
-            outline: none;
-            font-weight: 500;
-        }
+    .cell-mode.active { border-color: rgba(168, 85, 247, 0.55); box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.55), 0 0 20px rgba(139, 92, 246, 0.15); }
+    .cell-mode.active .mode-icon-wrap { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; }
 
-        input::placeholder {
-            color: #55557a;
-            font-weight: 400;
-        }
+    /* Input cell — full width */
+    .cell-input { grid-column: span 4; padding: 10px; }
 
-        /* Tombol utama dengan efek glow */
-        .glow-btn {
-            width: 100%;
-            background: linear-gradient(90deg, #7c3aed, #a855f7);
-            border: none;
-            padding: 16px;
-            border-radius: 60px;
-            font-weight: 700;
-            font-size: 1rem;
-            color: white;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
-            margin-bottom: 22px;
-        }
+    .input-row { display: flex; align-items: center; gap: 8px; }
 
-        .glow-btn:active {
-            transform: scale(0.97);
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.5);
-        }
+    input {
+        flex: 1; min-width: 0; background: #05050a; border: none; border-radius: 18px; padding: 15px 18px;
+        color: #f0f0ff; font-size: 0.88rem; outline: none; font-weight: 500;
+    }
+    input::placeholder { color: #4d4d70; font-weight: 400; }
 
-        /* Loading animation */
-        .loading {
-            text-align: center;
-            background: #0f0f1c;
-            border-radius: 40px;
-            padding: 16px;
-            margin-top: 15px;
-            color: #c084fc;
-            font-weight: 500;
-            backdrop-filter: blur(4px);
-        }
+    .glow-btn {
+        flex-shrink: 0; background: linear-gradient(90deg, #7c3aed, #a855f7); border: none; padding: 15px 22px; border-radius: 18px;
+        font-weight: 700; font-size: 0.85rem; color: white; cursor: pointer; transition: all 0.2s ease;
+        box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3); display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    }
+    .glow-btn:active { transform: scale(0.96); }
 
-        /* Result box - tanpa border, transparan */
-        .result-box {
-            margin-top: 24px;
-            background: #0b0b14;
-            border-radius: 36px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
+    .loading-cell {
+        grid-column: span 4; display: flex; align-items: center; justify-content: center; gap: 8px;
+        color: #c084fc; font-weight: 500; font-size: 0.85rem; padding: 16px;
+    }
 
-        /* Video player styling */
-        .result-box video {
-            width: 100%;
-            max-height: 500px;
-            border-radius: 28px;
-            background: #000000;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-            outline: none;
-            margin-bottom: 18px;
-        }
+    /* Result cells */
+    .cell-video { grid-column: span 4; padding: 12px; position: relative; }
+    .cell-video video { width: 100%; max-height: 460px; border-radius: 18px; display: block; background: #000; outline: none; }
 
-        /* Info author & stats warna putih */
-        .video-info {
-            margin: 12px 0 18px 0;
-        }
+    /* Quality choice modal */
+    .modal-backdrop {
+        position: fixed; inset: 0; background: rgba(5, 5, 10, 0.75); backdrop-filter: blur(6px);
+        display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px;
+    }
+    .modal-backdrop.show { display: flex; }
 
-        .video-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #ffffff;
-            line-height: 1.4;
-            margin-bottom: 12px;
-            letter-spacing: -0.2px;
-        }
+    .modal-card {
+        background: #101018; border-radius: 28px; padding: 26px; max-width: 380px; width: 100%;
+        box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.25), 0 30px 60px -20px rgba(0, 0, 0, 0.8);
+        position: relative; animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-        .author-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 18px;
-        }
+    .modal-close {
+        position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; color: #8a8ab0; cursor: pointer; background: #1a1a2a;
+        transition: all 0.2s ease;
+    }
+    .modal-close:hover { color: #fff; background: #26263c; }
 
-        .author {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+    .modal-thumb { width: 100%; max-height: 200px; object-fit: cover; border-radius: 18px; margin-bottom: 16px; background: #000; display: block; }
+    .modal-title { font-weight: 700; color: #fff; font-size: 0.9rem; line-height: 1.4; margin-bottom: 4px; padding-right: 20px; }
+    .modal-sub { font-size: 0.78rem; color: #8a8ab0; margin-bottom: 18px; }
 
-        .author-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: #2a2a3c;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
+    .modal-options { display: flex; flex-direction: column; gap: 10px; }
+    .modal-option {
+        display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: #17172a;
+        cursor: pointer; transition: all 0.2s ease; border: 1.5px solid transparent;
+    }
+    .modal-option:hover { border-color: rgba(168, 85, 247, 0.5); background: #1c1c30; }
+    .modal-option .opt-icon {
+        width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; flex-shrink: 0;
+    }
+    .modal-option.secondary .opt-icon { background: #232338; color: #b1b1d1; }
+    .modal-option .opt-text { flex: 1; min-width: 0; }
+    .modal-option .opt-title { font-weight: 700; color: #fff; font-size: 0.85rem; }
+    .modal-option .opt-desc { font-size: 0.7rem; color: #6a6a94; margin-top: 2px; }
 
-        .author-name {
-            font-weight: 600;
-            color: #e0e0ff;
-            font-size: 0.85rem;
-        }
+    .cell-title { grid-column: span 4; }
+    .cell-title .title-text { font-weight: 700; color: #fff; font-size: 0.92rem; line-height: 1.5; display: flex; align-items: flex-start; gap: 8px; }
 
-        .stats {
-            display: flex;
-            gap: 18px;
-            color: #c4c4e6;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
+    .hd-badge {
+        display: inline-flex; align-items: center; gap: 3px; background: linear-gradient(95deg, #7c3aed, #a855f7);
+        color: white; font-size: 0.58rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; margin-top: 3px;
+    }
 
-        /* Tombol download dual */
-        .download-actions {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
+    .cell-author { grid-column: span 2; display: flex; align-items: center; gap: 10px; }
+    .author-avatar { width: 34px; height: 34px; border-radius: 12px; object-fit: cover; background: #2a2a3c; }
+    .author-name { font-weight: 600; color: #e0e0ff; font-size: 0.8rem; }
+    .author-label { font-size: 0.65rem; color: #6a6a94; }
 
-        .btn-download {
-            flex: 1;
-            background: #1e1e30;
-            text-align: center;
-            padding: 14px 10px;
-            border-radius: 50px;
-            text-decoration: none;
-            color: white;
-            font-weight: 600;
-            transition: all 0.2s;
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+    .cell-stats { grid-column: span 2; display: flex; justify-content: space-around; align-items: center; }
+    .stat-item { text-align: center; }
+    .stat-item .num { font-weight: 700; color: #e0e0ff; font-size: 0.95rem; display: flex; align-items: center; gap: 4px; justify-content: center; }
+    .stat-item .lbl { font-size: 0.62rem; color: #6a6a94; margin-top: 2px; }
 
-        .btn-download.video-btn {
-            background: linear-gradient(95deg, #7c3aed, #9b4dff);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-        }
+    .cell-download { grid-column: span 4; display: flex; gap: 10px; padding: 10px; background: transparent; box-shadow: none; }
 
-        .btn-download.audio-btn {
-            background: linear-gradient(95deg, #4c1d95, #7c3aed);
-            box-shadow: 0 4px 12px rgba(108, 43, 217, 0.3);
-        }
+    .btn-download {
+        flex: 1; text-align: center; padding: 15px 12px; border-radius: 18px; text-decoration: none;
+        color: white; font-weight: 700; font-size: 0.85rem; transition: all 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-download.video-btn { background: linear-gradient(95deg, #7c3aed, #9b4dff); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3); }
+    .btn-download.audio-btn { background: linear-gradient(95deg, #4c1d95, #7c3aed); box-shadow: 0 4px 14px rgba(108, 43, 217, 0.3); }
+    .btn-download:active { transform: scale(0.97); }
 
-        .btn-download:active {
-            transform: scale(0.97);
-        }
+    .hd-note-cell { grid-column: span 4; font-size: 0.72rem; color: #6a6a94; text-align: center; background: transparent; box-shadow: none; padding: 4px; }
 
-        .quality-selector {
-            display: flex;
-            gap: 10px;
-            margin: -8px 0 16px;
-        }
+    /* Audio result */
+    .cell-audio-avatar {
+        grid-column: span 1; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
+    }
+    .cell-audio-info { grid-column: span 3; }
+    .cell-audio-info .title-text { font-weight: 700; color: #fff; font-size: 0.88rem; margin-bottom: 4px; }
+    .cell-audio-info .author-label-row { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: #9a9ac4; margin-bottom: 10px; }
+    .cell-audio-info audio { width: 100%; height: 32px; }
 
-        .quality-btn {
-            flex: 1;
-            text-align: center;
-            padding: 9px 8px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            background: #17172a;
-            color: #b1b1d1;
-            transition: all 0.2s ease;
-        }
+    .error-cell { grid-column: span 4; border-left: 3px solid #ff2d55; background: rgba(255, 45, 85, 0.08); border-radius: 16px; color: #ffa7b5; font-size: 0.85rem; line-height: 1.5; box-shadow: none; }
+    .error-title { display: flex; align-items: center; gap: 6px; font-weight: 700; margin-bottom: 4px; color: #ff8fa3; }
 
-        .quality-btn.active {
-            background: linear-gradient(95deg, #7c3aed, #a855f7);
-            color: white;
-            box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
-        }
+    footer { grid-column: span 4; text-align: center; font-size: 0.62rem; color: #4a4a6e; padding-top: 4px; box-shadow: none; background: transparent; }
 
-        .hd-badge {
-            display: inline-block;
-            background: linear-gradient(95deg, #7c3aed, #a855f7);
-            color: white;
-            font-size: 0.6rem;
-            font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 20px;
-            vertical-align: middle;
-            margin-left: 6px;
-            letter-spacing: 0.5px;
-        }
+    @media (max-width: 560px) {
+        .cell-mode { grid-column: span 4; }
+        .cell-author, .cell-stats { grid-column: span 4; }
+        .cell-audio-avatar { grid-column: span 4; height: 60px; }
+        .cell-audio-info { grid-column: span 4; }
+        .input-row { flex-wrap: wrap; }
+        .glow-btn { width: 100%; justify-content: center; }
+    }
 
-        .hd-note {
-            font-size: 0.72rem;
-            color: #8a8ab0;
-            margin-top: 12px;
-            text-align: center;
-        }
-
-        .error {
-            background: rgba(255, 45, 85, 0.12);
-            color: #ffa7b5;
-            padding: 18px;
-            border-radius: 32px;
-            text-align: center;
-            backdrop-filter: blur(5px);
-        }
-
-        footer {
-            text-align: center;
-            font-size: 0.65rem;
-            margin-top: 28px;
-            color: #5a5b89;
-        }
-
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
-    </style>
+    html { scroll-behavior: smooth; }
+</style>
 </head>
 <body>
-<div class="app-container">
-    <div class="glass-card">
-        <div class="neon-header">
-            <h1>⚡ VORTEX TIKTOK</h1>
-            <div class="sub">Downloader tanpa watermark • Video HD & MP3</div>
-        </div>
 
-        <!-- Mode selector -->
-        <div class="mode-selector" id="modeSelector">
-            <div class="mode-btn active" data-mode="video">
-                🎥 Video (No WM)
+<svg style="display:none">
+    <symbol id="icon-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></symbol>
+    <symbol id="icon-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></symbol>
+    <symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+    <symbol id="icon-sparkle" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9.5l-5.2 1.9L12 17l-1.8-5.6L5 9.5l5.2-1.9L12 2z"/><path d="M19 14l.8 2.4L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.6L19 14z"/></symbol>
+    <symbol id="icon-loader" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20"/></symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24"><path d="M12 2l3 6.5 7 .8-5.2 4.9L18.2 21 12 17.5 5.8 21 7.2 14.2 2 9.3l7-.8L12 2z"/></symbol>
+    <symbol id="icon-smartphone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
+    <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M12 21s-6.7-4.35-9.3-8.2C1 10 1.5 6.5 4.6 5 7 3.9 9.6 5 12 8c2.4-3 5-4.1 7.4-3 3.1 1.5 3.6 5 1.9 7.8C18.7 16.65 12 21 12 21z"/></symbol>
+    <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+    <symbol id="icon-headphones" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><rect x="17" y="14" width="4" height="6" rx="2"/><rect x="3" y="14" width="4" height="6" rx="2"/></symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.6 3.9a2 2 0 0 0-3.3 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+</svg>
+
+<div class="modal-backdrop" id="qualityModal">
+    <div class="modal-card">
+        <div class="modal-close" id="modalClose"><svg class="icon"><use href="#icon-x"></use></svg></div>
+        <img class="modal-thumb" id="modalThumb" src="" alt="">
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-sub">Pilih kualitas video sebelum download</div>
+        <div class="modal-options">
+            <div class="modal-option" id="optHD">
+                <div class="opt-icon"><svg class="icon"><use href="#icon-star"></use></svg></div>
+                <div class="opt-text">
+                    <div class="opt-title">HD</div>
+                    <div class="opt-desc">Kualitas terbaik, ukuran file lebih besar</div>
+                </div>
             </div>
-            <div class="mode-btn" data-mode="audio">
-                🎵 MP3 (Audio Only)
+            <div class="modal-option secondary" id="optNormal">
+                <div class="opt-icon"><svg class="icon"><use href="#icon-smartphone"></use></svg></div>
+                <div class="opt-text">
+                    <div class="opt-title">Normal</div>
+                    <div class="opt-desc">Ukuran lebih kecil, proses lebih cepat</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="stage">
+    <div class="bento">
+
+        <div class="cell cell-header">
+            <div class="brand">
+                <div class="brand-icon"><svg class="icon" style="width:1.3em;height:1.3em;"><use href="#icon-zap"></use></svg></div>
+                <div>
+                    <h1>Vortex TikTok</h1>
+                    <div class="sub">Downloader tanpa watermark, HD & MP3</div>
+                </div>
+            </div>
+            <div class="badge-row">
+                <div class="pill-badge"><svg class="icon"><use href="#icon-shield"></use></svg> No Watermark</div>
             </div>
         </div>
 
-        <div class="input-group">
-            <input type="text" id="tiktokUrl" placeholder="Tempel URL TikTok disini... contoh: https://vt.tiktok.com/xxxx">
+        <div class="cell cell-mode active" id="modeCardVideo" data-mode="video">
+            <div class="mode-icon-wrap"><svg class="icon"><use href="#icon-video"></use></svg></div>
+            <div class="mode-title">Video</div>
+            <div class="mode-desc">Download video HD tanpa watermark</div>
         </div>
 
-        <button class="glow-btn" id="actionBtn">✨ Proses & Download</button>
-
-        <div id="loadingArea" style="display: none;">
-            <div class="loading">⏳ Sedang memproses, tunggu sebentar...</div>
+        <div class="cell cell-mode" id="modeCardAudio" data-mode="audio">
+            <div class="mode-icon-wrap"><svg class="icon"><use href="#icon-music"></use></svg></div>
+            <div class="mode-title">MP3</div>
+            <div class="mode-desc">Ambil audio saja dalam format MP3</div>
         </div>
 
-        <div id="resultArea"></div>
-        <footer>Powered by Vortex Proxy • Multi-API Fallback • Glowing UI</footer>
+        <div class="cell cell-input">
+            <div class="input-row">
+                <input type="text" id="tiktokUrl" placeholder="Tempel URL TikTok disini...">
+                <button class="glow-btn" id="actionBtn"><svg class="icon"><use href="#icon-sparkle"></use></svg> Proses</button>
+            </div>
+        </div>
+
+        <div class="cell loading-cell" id="loadingArea" style="display: none;">
+            <svg class="icon spin"><use href="#icon-loader"></use></svg> Sedang memproses, tunggu sebentar...
+        </div>
+
+        <div id="resultArea" style="display: contents;"></div>
+
+        <div class="cell" style="grid-column: span 4; text-align:center; box-shadow:none; background:transparent; padding-top:4px;">
+            <footer style="grid-column:auto;">Powered by Vortex Proxy &middot; Multi-API Fallback</footer>
+        </div>
     </div>
 </div>
 
 <script>
-    // Mode video / audio
     let currentMode = "video";
-    
-    const modeBtns = document.querySelectorAll(".mode-btn");
+
+    const modeCardVideo = document.getElementById("modeCardVideo");
+    const modeCardAudio = document.getElementById("modeCardAudio");
+    const modeCards = [modeCardVideo, modeCardAudio];
     const urlInput = document.getElementById("tiktokUrl");
     const actionBtn = document.getElementById("actionBtn");
     const loadingDiv = document.getElementById("loadingArea");
     const resultDiv = document.getElementById("resultArea");
-    
-    modeBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            modeBtns.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            currentMode = btn.getAttribute("data-mode");
-            if(currentMode === "audio") {
-                actionBtn.innerHTML = "🎵 Konversi ke MP3 & Download";
+
+    const qualityModal = document.getElementById("qualityModal");
+    const modalThumb = document.getElementById("modalThumb");
+    const modalTitle = document.getElementById("modalTitle");
+    const optHD = document.getElementById("optHD");
+    const optNormal = document.getElementById("optNormal");
+    const modalClose = document.getElementById("modalClose");
+
+    modalClose.addEventListener("click", closeQualityModal);
+    qualityModal.addEventListener("click", (e) => { if (e.target === qualityModal) closeQualityModal(); });
+
+    function closeQualityModal() {
+        qualityModal.classList.remove("show");
+    }
+
+    function extractVideoOptions(data) {
+        const videoOptions = (data.all_downloads || []).filter(
+            d => d.type === "nowatermark_hd" || d.type === "nowatermark"
+        );
+        if (videoOptions.length === 0) {
+            videoOptions.push({ type: "nowatermark", label: "Video", url: data.download_url });
+        }
+        videoOptions.sort((a, b) => (a.type === "nowatermark_hd" ? -1 : 1) - (b.type === "nowatermark_hd" ? -1 : 1));
+        return videoOptions;
+    }
+
+    function openQualityModal(data, videoOptions) {
+        const title = data.title || "TikTok Video";
+        modalThumb.src = data.thumbnail || "";
+        modalThumb.style.display = data.thumbnail ? "block" : "none";
+        modalTitle.textContent = title.substring(0, 70);
+
+        const hdOption = videoOptions.find(v => v.type === "nowatermark_hd");
+        const normalOption = videoOptions.find(v => v.type === "nowatermark") || videoOptions[0];
+
+        optHD.style.display = hdOption ? "flex" : "none";
+        optNormal.style.display = normalOption ? "flex" : "none";
+
+        optHD.onclick = () => {
+            closeQualityModal();
+            showVideoResult(data, hdOption);
+        };
+        optNormal.onclick = () => {
+            closeQualityModal();
+            showVideoResult(data, normalOption);
+        };
+
+        qualityModal.classList.add("show");
+    }
+
+    modeCards.forEach(card => {
+        card.addEventListener("click", () => {
+            modeCards.forEach(c => c.classList.remove("active"));
+            card.classList.add("active");
+            currentMode = card.getAttribute("data-mode");
+            if (currentMode === "audio") {
+                actionBtn.innerHTML = '<svg class="icon"><use href="#icon-music"></use></svg> Konversi MP3';
             } else {
-                actionBtn.innerHTML = "🎥 Download Video Tanpa Watermark";
+                actionBtn.innerHTML = '<svg class="icon"><use href="#icon-sparkle"></use></svg> Proses';
             }
             resultDiv.innerHTML = "";
         });
     });
-    
+
     actionBtn.addEventListener("click", async () => {
         const url = urlInput.value.trim();
         if (!url) {
-            alert("⚠️ Masukkan URL TikTok dulu!");
+            alert("Masukkan URL TikTok dulu!");
             return;
         }
-        
-        loadingDiv.style.display = "block";
+
+        loadingDiv.style.display = "flex";
         resultDiv.innerHTML = "";
-        
+
         try {
             const response = await fetch("/api/download", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: url, mode: currentMode })
             });
-            
+
             const data = await response.json();
-            
+
             if (!data.success || !data.download_url) {
                 throw new Error(data.message || "Gagal mengambil data dari server");
             }
-            
+
             if (currentMode === "video") {
-                showVideoResult(data);
+                const videoOptions = extractVideoOptions(data);
+                if (videoOptions.length > 1) {
+                    openQualityModal(data, videoOptions);
+                } else {
+                    showVideoResult(data, videoOptions[0]);
+                }
             } else {
                 showAudioResult(data);
             }
         } catch (err) {
-            resultDiv.innerHTML = `<div class="error">❌ Gagal: ${err.message}<br><br>💡 Coba URL lain atau cek koneksi</div>`;
+            resultDiv.innerHTML = `<div class="cell error-cell"><div class="error-title"><svg class="icon"><use href="#icon-alert"></use></svg> Gagal</div>${err.message}<br>Coba URL lain atau cek koneksi</div>`;
         } finally {
             loadingDiv.style.display = "none";
         }
     });
-    
-    function showVideoResult(data) {
+
+    function showVideoResult(data, chosenVideo) {
         const title = data.title || "TikTok Video";
         const author = data.author || "TikTok User";
         const avatar = data.thumbnail || "https://ui-avatars.com/api/?background=7c3aed&color=fff&name=" + encodeURIComponent(author);
         const likes = formatCount(data.stats?.likes);
         const comments = formatCount(data.stats?.comments);
-
-        // Kumpulkan semua opsi kualitas video yang tersedia dari server
-        const videoOptions = (data.all_downloads || []).filter(
-            d => d.type === "nowatermark_hd" || d.type === "nowatermark"
-        );
-        // Kalau backend tidak sediakan daftar, pakai download_url utama saja
-        if (videoOptions.length === 0) {
-            videoOptions.push({ type: "nowatermark", label: "Video", url: data.download_url });
-        }
-        // HD duluan
-        videoOptions.sort((a, b) => (a.type === "nowatermark_hd" ? -1 : 1) - (b.type === "nowatermark_hd" ? -1 : 1));
-
-        const defaultVideo = videoOptions[0];
-        const hasHd = videoOptions.some(v => v.type === "nowatermark_hd");
-
-        let qualityButtons = "";
-        if (videoOptions.length > 1) {
-            qualityButtons = `
-                <div class="quality-selector" id="qualitySelector">
-                    ${videoOptions.map((v, i) => `
-                        <div class="quality-btn ${i === 0 ? "active" : ""}" data-url="${v.url}" data-index="${i}">
-                            ${v.type === "nowatermark_hd" ? "🌟 HD" : "📱 Normal"}
-                        </div>
-                    `).join("")}
-                </div>
-            `;
-        }
+        const isHd = chosenVideo.type === "nowatermark_hd";
 
         let html = `
-            <div class="result-box">
-                <video id="resultVideo" src="${defaultVideo.url}" controls autoplay loop playsinline poster="${data.thumbnail || ""}"></video>
-                ${qualityButtons}
-                <div class="video-info">
-                    <div class="video-title">✨ ${escapeHtml(title.substring(0, 80))} ${hasHd ? '<span class="hd-badge">HD</span>' : ""}</div>
-                    <div class="author-stats">
-                        <div class="author">
-                            <img class="author-avatar" src="${avatar}" onerror="this.src='https://ui-avatars.com/api/?background=7c3aed&color=fff&name=?'">
-                            <span class="author-name">@${escapeHtml(author)}</span>
-                        </div>
-                        <div class="stats">
-                            <span>❤️ ${likes}</span>
-                            <span>💬 ${comments}</span>
-                        </div>
-                    </div>
-                    <div class="download-actions" id="downloadActions">
-                        <a class="btn-download video-btn" id="downloadLink" href="${defaultVideo.url}" download>⬇️ Download Video (MP4)</a>
-                    </div>
-                    ${!hasHd ? '<div class="hd-note">ℹ️ Versi HD tidak tersedia untuk video ini dari server, ini kualitas terbaik yang bisa didapat.</div>' : ""}
+            <div class="cell cell-video">
+                <video id="resultVideo" src="${chosenVideo.url}" controls autoplay loop playsinline poster="${data.thumbnail || ""}"></video>
+            </div>
+            <div class="cell cell-title">
+                <div class="title-text">${escapeHtml(title.substring(0, 90))} <span class="hd-badge"><svg class="icon"><use href="${isHd ? "#icon-star" : "#icon-smartphone"}"></use></svg>${isHd ? "HD" : "Normal"}</span></div>
+            </div>
+            <div class="cell cell-author">
+                <img class="author-avatar" src="${avatar}" onerror="this.src='https://ui-avatars.com/api/?background=7c3aed&color=fff&name=?'">
+                <div>
+                    <div class="author-name">@${escapeHtml(author)}</div>
+                    <div class="author-label">Creator</div>
                 </div>
+            </div>
+            <div class="cell cell-stats">
+                <div class="stat-item">
+                    <div class="num"><svg class="icon icon-fill"><use href="#icon-heart"></use></svg> ${likes}</div>
+                    <div class="lbl">Likes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num"><svg class="icon"><use href="#icon-message"></use></svg> ${comments}</div>
+                    <div class="lbl">Komentar</div>
+                </div>
+            </div>
+            <div class="cell cell-download" id="downloadActions">
+                <a class="btn-download video-btn" id="downloadLink" href="${chosenVideo.url}" download><svg class="icon"><use href="#icon-download"></use></svg> Download Video (MP4)</a>
             </div>
         `;
         resultDiv.innerHTML = html;
-
-        // Ganti video & link download saat user pilih kualitas lain
-        const selector = document.getElementById("qualitySelector");
-        if (selector) {
-            selector.querySelectorAll(".quality-btn").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    selector.querySelectorAll(".quality-btn").forEach(b => b.classList.remove("active"));
-                    btn.classList.add("active");
-                    const newUrl = btn.getAttribute("data-url");
-                    document.getElementById("resultVideo").src = newUrl;
-                    document.getElementById("downloadLink").href = newUrl;
-                });
-            });
-        }
     }
-    
+
     function showAudioResult(data) {
         const audioUrl = data.download_url;
         const title = data.title || "TikTok Audio";
         const author = data.author || "TikTok Creator";
-        
+
         let html = `
-            <div class="result-box">
-                <div style="text-align: center; padding: 16px 0 8px;">
-                    <div style="font-size: 3rem;">🎧</div>
-                    <div class="video-title" style="margin-top: 12px;">${escapeHtml(title.substring(0, 70))}</div>
-                    <div style="color: #b9b9e6; margin: 8px 0 12px;">🎤 @${escapeHtml(author)}</div>
-                    <audio controls style="width: 100%; margin: 12px 0 10px;" src="${audioUrl}"></audio>
-                </div>
-                <div class="download-actions">
-                    <a class="btn-download audio-btn" href="${audioUrl}" download>🎵 Download MP3 (Audio Only)</a>
-                </div>
+            <div class="cell cell-audio-avatar"><svg class="icon" style="width:1.6em;height:1.6em;color:#fff;"><use href="#icon-headphones"></use></svg></div>
+            <div class="cell cell-audio-info">
+                <div class="title-text">${escapeHtml(title.substring(0, 60))}</div>
+                <div class="author-label-row"><svg class="icon"><use href="#icon-mic"></use></svg> @${escapeHtml(author)}</div>
+                <audio controls src="${audioUrl}"></audio>
+            </div>
+            <div class="cell cell-download">
+                <a class="btn-download audio-btn" href="${audioUrl}" download><svg class="icon"><use href="#icon-download"></use></svg> Download MP3 (Audio Only)</a>
             </div>
         `;
         resultDiv.innerHTML = html;
     }
-    
+
     function formatCount(n) {
         if (n === null || n === undefined) return "?";
         n = Number(n);
