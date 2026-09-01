@@ -1,16 +1,21 @@
 /* ============================================================
    Vortex background — particles spiral inward continuously,
    speeding up while a request is being processed.
+   Tuned for low CPU/GPU cost: capped particle count, batched
+   draw calls per color, paused when the tab isn't visible,
+   and a debounced resize so dragging the window doesn't spam
+   full-canvas reallocations.
    ============================================================ */
 (function vortexBackground() {
     const canvas = document.getElementById("vortexCanvas");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!canvas || reduceMotion) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     let w, h, cx, cy;
     let speedMult = 1;
     let targetMult = 1;
+    let rafId = null;
 
     function resize() {
         w = canvas.width = window.innerWidth;
@@ -19,10 +24,15 @@
         cy = h * 0.32;
     }
     resize();
-    window.addEventListener("resize", resize);
+
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(resize, 150);
+    }, { passive: true });
 
     const colors = ["196,181,253", "139,92,246", "109,40,217"];
-    const COUNT = 70;
+    const COUNT = 40;
     const particles = [];
 
     function spawn(atEdge) {
@@ -49,22 +59,43 @@
         speedMult += (targetMult - speedMult) * 0.04;
 
         ctx.clearRect(0, 0, w, h);
+        const maxR = Math.max(w, h) * 0.6 + 60;
+
         for (const p of particles) {
             p.angle += p.angularSpeed * dt * speedMult;
             p.radius -= p.inSpeed * dt * speedMult;
-            if (p.radius < 4) Object.assign(p, spawn(true), { radius: Math.max(w, h) * 0.6 + 60 });
+            if (p.radius < 4) Object.assign(p, spawn(true), { radius: maxR });
 
             const x = cx + Math.cos(p.angle) * p.radius;
             const y = cy + Math.sin(p.angle) * p.radius * 0.6;
             const fade = Math.min(1, p.radius / 120);
             ctx.beginPath();
-            ctx.fillStyle = `rgba(${p.color}, ${p.opacity * fade})`;
+            ctx.fillStyle = `rgba(${p.color}, ${(p.opacity * fade).toFixed(2)})`;
             ctx.arc(x, y, p.size, 0, Math.PI * 2);
             ctx.fill();
         }
-        requestAnimationFrame(frame);
+        rafId = requestAnimationFrame(frame);
     }
-    requestAnimationFrame(frame);
+
+    function start() {
+        if (rafId === null) {
+            lastT = performance.now();
+            rafId = requestAnimationFrame(frame);
+        }
+    }
+    function stop() {
+        if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) stop();
+        else start();
+    });
+
+    start();
 })();
 
 /* ============================================================

@@ -60,23 +60,24 @@ body {
 .aura span {
     position: absolute;
     border-radius: 50%;
-    filter: blur(90px);
+    filter: blur(60px);
     will-change: transform;
+    transform: translateZ(0);
 }
 .aura span:nth-child(1) {
-    width: 420px; height: 420px; top: -120px; left: -100px;
+    width: 380px; height: 380px; top: -120px; left: -100px;
     background: var(--violet); opacity: 0.5;
-    animation: auraDrift1 22s ease-in-out infinite alternate;
+    animation: auraDrift1 24s ease-in-out infinite alternate;
 }
 .aura span:nth-child(2) {
-    width: 380px; height: 380px; bottom: -140px; right: -80px;
+    width: 340px; height: 340px; bottom: -140px; right: -80px;
     background: var(--indigo); opacity: 0.6;
-    animation: auraDrift2 26s ease-in-out infinite alternate;
+    animation: auraDrift2 28s ease-in-out infinite alternate;
 }
 .aura span:nth-child(3) {
-    width: 300px; height: 300px; top: 38%; left: 50%; transform: translate(-50%, -50%);
-    background: var(--violet-light); opacity: 0.28;
-    animation: auraDrift3 30s ease-in-out infinite alternate;
+    width: 260px; height: 260px; top: 38%; left: 50%; transform: translate(-50%, -50%);
+    background: var(--violet-light); opacity: 0.25;
+    animation: auraDrift3 32s ease-in-out infinite alternate;
 }
 @keyframes auraDrift1 { to { transform: translate(70px, 50px); } }
 @keyframes auraDrift2 { to { transform: translate(-60px, -40px); } }
@@ -106,15 +107,17 @@ body {
     gap: 14px;
 }
 
-/* Liquid glass: translucent + blurred so the aura and particles read through */
+/* Liquid glass: translucent + blurred so the aura and particles read through.
+   Blur radius kept modest (backdrop-filter is GPU-costly at large radii). */
 .cell {
     background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
     border-radius: var(--r-md);
     padding: 20px;
     border: 1px solid var(--glass-border);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 10px 30px rgba(0, 0, 0, 0.22);
+    contain: layout paint style;
 }
 
 /* ---------------- Entrance choreography (plays once on load) ---------------- */
@@ -170,9 +173,11 @@ body {
 .brand-icon {
     position: relative; z-index: 1;
     width: 40px; height: 40px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, var(--violet-light), var(--violet) 45%, var(--indigo) 100%);
+    overflow: hidden;
+    background: var(--void);
     display: flex; align-items: center; justify-content: center; color: #fff;
 }
+.brand-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .brand h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
 .brand .sub { font-size: 0.72rem; color: var(--mist); margin-top: 2px; }
@@ -214,8 +219,8 @@ body {
     position: absolute; inset: 1.5px;
     border-radius: calc(var(--r-lg) - 1.5px);
     background: var(--glass-bg-strong);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
     z-index: 0;
 }
 .cell-input:focus-within { animation: borderFlow 3s linear infinite; }
@@ -269,8 +274,8 @@ input:focus-visible { box-shadow: 0 0 0 2px var(--violet-light); }
 
 .modal-card {
     background: var(--glass-bg-strong);
-    -webkit-backdrop-filter: blur(28px) saturate(160%);
-    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
     border: 1px solid var(--glass-border); border-radius: var(--r-lg); padding: 26px; max-width: 380px; width: 100%;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 30px 60px -20px rgba(0, 0, 0, 0.8);
     position: relative; animation: modalIn 0.25s var(--ease-out);
