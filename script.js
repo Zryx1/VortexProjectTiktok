@@ -21,7 +21,7 @@
     resize();
     window.addEventListener("resize", resize);
 
-    const colors = ["139,92,246", "236,72,153", "53,230,214"];
+    const colors = ["196,181,253", "139,92,246", "109,40,217"];
     const COUNT = 70;
     const particles = [];
 
