@@ -4,208 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Vortex TikTok Downloader | Video & MP3</title>
-<style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-        background: #08080c;
-        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Poppins', sans-serif;
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 24px;
-    }
-
-    .icon { width: 1em; height: 1em; display: inline-block; vertical-align: -0.15em; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .icon-fill { fill: currentColor; stroke: none; }
-    .spin { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .stage { max-width: 720px; width: 100%; }
-
-    /* Bento grid — signature element: modular cells of different sizes */
-    .bento {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        grid-auto-rows: min-content;
-        gap: 14px;
-    }
-
-    .cell {
-        background: #101018;
-        border-radius: 26px;
-        padding: 20px;
-        box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.12);
-        transition: box-shadow 0.25s ease;
-    }
-
-    .cell:hover { box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3); }
-
-    /* Header cell */
-    .cell-header { grid-column: span 4; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, #171025, #0d0a14); flex-wrap: wrap; }
-
-    .brand { display: flex; align-items: center; gap: 10px; }
-
-    .brand-icon {
-        width: 40px; height: 40px; border-radius: 14px; flex-shrink: 0;
-        background: linear-gradient(135deg, #7c3aed, #a855f7); display: flex; align-items: center; justify-content: center; color: #fff;
-        box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
-    }
-
-    .brand h1 { font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
-    .brand .sub { font-size: 0.7rem; color: #7a7aa0; margin-top: 2px; }
-
-    .badge-row { display: flex; gap: 8px; }
-    .pill-badge { font-size: 0.65rem; font-weight: 700; color: #c084fc; background: rgba(124, 58, 237, 0.15); padding: 6px 12px; border-radius: 999px; display: flex; align-items: center; gap: 5px; }
-
-    /* Mode cells — two square-ish cells side by side */
-    .cell-mode {
-        grid-column: span 2;
-        display: flex; flex-direction: column; gap: 10px; cursor: pointer;
-        border: 1.5px solid transparent;
-    }
-
-    .cell-mode .mode-icon-wrap {
-        width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-        background: #1a1a2a; color: #8a8ab0; transition: all 0.2s ease;
-    }
-
-    .cell-mode .mode-title { font-weight: 700; color: #e0e0ff; font-size: 0.9rem; }
-    .cell-mode .mode-desc { font-size: 0.72rem; color: #6a6a94; }
-
-    .cell-mode.active { border-color: rgba(168, 85, 247, 0.55); box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.55), 0 0 20px rgba(139, 92, 246, 0.15); }
-    .cell-mode.active .mode-icon-wrap { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; }
-
-    /* Input cell — full width */
-    .cell-input { grid-column: span 4; padding: 10px; }
-
-    .input-row { display: flex; align-items: center; gap: 8px; }
-
-    input {
-        flex: 1; min-width: 0; background: #05050a; border: none; border-radius: 18px; padding: 15px 18px;
-        color: #f0f0ff; font-size: 0.88rem; outline: none; font-weight: 500;
-    }
-    input::placeholder { color: #4d4d70; font-weight: 400; }
-
-    .glow-btn {
-        flex-shrink: 0; background: linear-gradient(90deg, #7c3aed, #a855f7); border: none; padding: 15px 22px; border-radius: 18px;
-        font-weight: 700; font-size: 0.85rem; color: white; cursor: pointer; transition: all 0.2s ease;
-        box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3); display: flex; align-items: center; gap: 8px; white-space: nowrap;
-    }
-    .glow-btn:active { transform: scale(0.96); }
-
-    .loading-cell {
-        grid-column: span 4; display: flex; align-items: center; justify-content: center; gap: 8px;
-        color: #c084fc; font-weight: 500; font-size: 0.85rem; padding: 16px;
-    }
-
-    /* Result cells */
-    .cell-video { grid-column: span 4; padding: 12px; position: relative; }
-    .cell-video video { width: 100%; max-height: 460px; border-radius: 18px; display: block; background: #000; outline: none; }
-
-    /* Quality choice modal */
-    .modal-backdrop {
-        position: fixed; inset: 0; background: rgba(5, 5, 10, 0.75); backdrop-filter: blur(6px);
-        display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px;
-    }
-    .modal-backdrop.show { display: flex; }
-
-    .modal-card {
-        background: #101018; border-radius: 28px; padding: 26px; max-width: 380px; width: 100%;
-        box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.25), 0 30px 60px -20px rgba(0, 0, 0, 0.8);
-        position: relative; animation: modalIn 0.2s ease;
-    }
-    @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-
-    .modal-close {
-        position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center; color: #8a8ab0; cursor: pointer; background: #1a1a2a;
-        transition: all 0.2s ease;
-    }
-    .modal-close:hover { color: #fff; background: #26263c; }
-
-    .modal-thumb { width: 100%; max-height: 200px; object-fit: cover; border-radius: 18px; margin-bottom: 16px; background: #000; display: block; }
-    .modal-title { font-weight: 700; color: #fff; font-size: 0.9rem; line-height: 1.4; margin-bottom: 4px; padding-right: 20px; }
-    .modal-sub { font-size: 0.78rem; color: #8a8ab0; margin-bottom: 18px; }
-
-    .modal-options { display: flex; flex-direction: column; gap: 10px; }
-    .modal-option {
-        display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: #17172a;
-        cursor: pointer; transition: all 0.2s ease; border: 1.5px solid transparent;
-    }
-    .modal-option:hover { border-color: rgba(168, 85, 247, 0.5); background: #1c1c30; }
-    .modal-option .opt-icon {
-        width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-        background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; flex-shrink: 0;
-    }
-    .modal-option.secondary .opt-icon { background: #232338; color: #b1b1d1; }
-    .modal-option .opt-text { flex: 1; min-width: 0; }
-    .modal-option .opt-title { font-weight: 700; color: #fff; font-size: 0.85rem; }
-    .modal-option .opt-desc { font-size: 0.7rem; color: #6a6a94; margin-top: 2px; }
-
-    .cell-title { grid-column: span 4; }
-    .cell-title .title-text { font-weight: 700; color: #fff; font-size: 0.92rem; line-height: 1.5; display: flex; align-items: flex-start; gap: 8px; }
-
-    .hd-badge {
-        display: inline-flex; align-items: center; gap: 3px; background: linear-gradient(95deg, #7c3aed, #a855f7);
-        color: white; font-size: 0.58rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; margin-top: 3px;
-    }
-
-    .cell-author { grid-column: span 2; display: flex; align-items: center; gap: 10px; }
-    .author-avatar { width: 34px; height: 34px; border-radius: 12px; object-fit: cover; background: #2a2a3c; }
-    .author-name { font-weight: 600; color: #e0e0ff; font-size: 0.8rem; }
-    .author-label { font-size: 0.65rem; color: #6a6a94; }
-
-    .cell-stats { grid-column: span 2; display: flex; justify-content: space-around; align-items: center; }
-    .stat-item { text-align: center; }
-    .stat-item .num { font-weight: 700; color: #e0e0ff; font-size: 0.95rem; display: flex; align-items: center; gap: 4px; justify-content: center; }
-    .stat-item .lbl { font-size: 0.62rem; color: #6a6a94; margin-top: 2px; }
-
-    .cell-download { grid-column: span 4; display: flex; gap: 10px; padding: 10px; background: transparent; box-shadow: none; }
-
-    .btn-download {
-        flex: 1; text-align: center; padding: 15px 12px; border-radius: 18px; text-decoration: none;
-        color: white; font-weight: 700; font-size: 0.85rem; transition: all 0.2s;
-        display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-download.video-btn { background: linear-gradient(95deg, #7c3aed, #9b4dff); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3); }
-    .btn-download.audio-btn { background: linear-gradient(95deg, #4c1d95, #7c3aed); box-shadow: 0 4px 14px rgba(108, 43, 217, 0.3); }
-    .btn-download:active { transform: scale(0.97); }
-
-    .hd-note-cell { grid-column: span 4; font-size: 0.72rem; color: #6a6a94; text-align: center; background: transparent; box-shadow: none; padding: 4px; }
-
-    /* Audio result */
-    .cell-audio-avatar {
-        grid-column: span 1; display: flex; align-items: center; justify-content: center;
-        background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
-    }
-    .cell-audio-info { grid-column: span 3; }
-    .cell-audio-info .title-text { font-weight: 700; color: #fff; font-size: 0.88rem; margin-bottom: 4px; }
-    .cell-audio-info .author-label-row { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: #9a9ac4; margin-bottom: 10px; }
-    .cell-audio-info audio { width: 100%; height: 32px; }
-
-    .error-cell { grid-column: span 4; border-left: 3px solid #ff2d55; background: rgba(255, 45, 85, 0.08); border-radius: 16px; color: #ffa7b5; font-size: 0.85rem; line-height: 1.5; box-shadow: none; }
-    .error-title { display: flex; align-items: center; gap: 6px; font-weight: 700; margin-bottom: 4px; color: #ff8fa3; }
-
-    footer { grid-column: span 4; text-align: center; font-size: 0.62rem; color: #4a4a6e; padding-top: 4px; box-shadow: none; background: transparent; }
-
-    @media (max-width: 560px) {
-        .cell-mode { grid-column: span 4; }
-        .cell-author, .cell-stats { grid-column: span 4; }
-        .cell-audio-avatar { grid-column: span 4; height: 60px; }
-        .cell-audio-info { grid-column: span 4; }
-        .input-row { flex-wrap: wrap; }
-        .glow-btn { width: 100%; justify-content: center; }
-    }
-
-    html { scroll-behavior: smooth; }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<canvas id="vortexCanvas" aria-hidden="true"></canvas>
+
 <svg style="display:none">
-    <symbol id="icon-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></symbol>
+    <symbol id="icon-vortex" viewBox="0 0 24 24"><path d="M12 2c5.5 0 8 3 8 6.5S17 14 12.5 14 7 12 7 9.5 9 6 12.5 6"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
     <symbol id="icon-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></symbol>
     <symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
     <symbol id="icon-sparkle" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9.5l-5.2 1.9L12 17l-1.8-5.6L5 9.5l5.2-1.9L12 2z"/><path d="M19 14l.8 2.4L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.6L19 14z"/></symbol>
@@ -250,12 +59,14 @@
 <div class="stage">
     <div class="bento">
 
-        <div class="cell cell-header">
+        <div class="cell cell-header enter-1">
             <div class="brand">
-                <div class="brand-icon"><svg class="icon" style="width:1.3em;height:1.3em;"><use href="#icon-zap"></use></svg></div>
+                <div class="portal-ring">
+                    <div class="brand-icon"><svg class="icon" style="width:1.3em;height:1.3em;"><use href="#icon-vortex"></use></svg></div>
+                </div>
                 <div>
-                    <h1>Vortex TikTok</h1>
-                    <div class="sub">Downloader No watermark, HD & MP3</div>
+                    <h1>Vortex</h1>
+                    <div class="sub">Tarik video &amp; audio TikTok, tanpa watermark</div>
                 </div>
             </div>
             <div class="badge-row">
@@ -263,277 +74,35 @@
             </div>
         </div>
 
-        <div class="cell cell-mode active" id="modeCardVideo" data-mode="video">
+        <div class="cell cell-mode active enter-2" id="modeCardVideo" data-mode="video">
             <div class="mode-icon-wrap"><svg class="icon"><use href="#icon-video"></use></svg></div>
             <div class="mode-title">Video</div>
-            <div class="mode-desc">Download video HD No watermark</div>
+            <div class="mode-desc">Download video HD no watermark</div>
         </div>
 
-        <div class="cell cell-mode" id="modeCardAudio" data-mode="audio">
+        <div class="cell cell-mode enter-3" id="modeCardAudio" data-mode="audio">
             <div class="mode-icon-wrap"><svg class="icon"><use href="#icon-music"></use></svg></div>
             <div class="mode-title">MP3</div>
             <div class="mode-desc">Ambil audio dalam format MP3</div>
         </div>
 
-        <div class="cell cell-input">
+        <div class="cell cell-input enter-4">
             <div class="input-row">
-                <input type="text" id="tiktokUrl" placeholder="Tempel URL TikTok disini...">
+                <input type="text" id="tiktokUrl" placeholder="Tempel URL TikTok di sini...">
                 <button class="glow-btn" id="actionBtn"><svg class="icon"><use href="#icon-sparkle"></use></svg> Proses</button>
             </div>
         </div>
 
         <div class="cell loading-cell" id="loadingArea" style="display: none;">
-            <svg class="icon spin"><use href="#icon-loader"></use></svg> Sedang memproses, tunggu sebentar...
+            <svg class="icon spin"><use href="#icon-loader"></use></svg> Sedang menarik data dari pusaran...
         </div>
 
         <div id="resultArea" style="display: contents;"></div>
 
-        <div class="cell" style="grid-column: span 4; text-align:center; box-shadow:none; background:transparent; padding-top:4px;">
-            <footer style="grid-column:auto;">Powered by Vortex Proxy &middot; Multi-API Fallback By Zeff</footer>
-        </div>
+        <footer class="enter-5">Powered by Vortex Proxy &middot; Multi-API Fallback By Zeff</footer>
     </div>
 </div>
 
-<script>
-    let currentMode = "video";
-
-    const modeCardVideo = document.getElementById("modeCardVideo");
-    const modeCardAudio = document.getElementById("modeCardAudio");
-    const modeCards = [modeCardVideo, modeCardAudio];
-    const urlInput = document.getElementById("tiktokUrl");
-    const actionBtn = document.getElementById("actionBtn");
-    const loadingDiv = document.getElementById("loadingArea");
-    const resultDiv = document.getElementById("resultArea");
-
-    const qualityModal = document.getElementById("qualityModal");
-    const modalThumb = document.getElementById("modalThumb");
-    const modalTitle = document.getElementById("modalTitle");
-    const optHD = document.getElementById("optHD");
-    const optNormal = document.getElementById("optNormal");
-    const modalClose = document.getElementById("modalClose");
-
-    modalClose.addEventListener("click", closeQualityModal);
-    qualityModal.addEventListener("click", (e) => { if (e.target === qualityModal) closeQualityModal(); });
-
-    function closeQualityModal() {
-        qualityModal.classList.remove("show");
-    }
-
-    function extractVideoOptions(data) {
-        const videoOptions = (data.all_downloads || []).filter(
-            d => d.type === "nowatermark_hd" || d.type === "nowatermark"
-        );
-        if (videoOptions.length === 0) {
-            videoOptions.push({ type: "nowatermark", label: "Video", url: data.download_url });
-        }
-        videoOptions.sort((a, b) => (a.type === "nowatermark_hd" ? -1 : 1) - (b.type === "nowatermark_hd" ? -1 : 1));
-        return videoOptions;
-    }
-
-    function openQualityModal(data, videoOptions) {
-        const title = data.title || "TikTok Video";
-        modalThumb.src = data.thumbnail || "";
-        modalThumb.style.display = data.thumbnail ? "block" : "none";
-        modalTitle.textContent = title.substring(0, 70);
-
-        const hdOption = videoOptions.find(v => v.type === "nowatermark_hd");
-        const normalOption = videoOptions.find(v => v.type === "nowatermark") || videoOptions[0];
-
-        optHD.style.display = hdOption ? "flex" : "none";
-        optNormal.style.display = normalOption ? "flex" : "none";
-
-        optHD.onclick = () => {
-            closeQualityModal();
-            showVideoResult(data, hdOption);
-        };
-        optNormal.onclick = () => {
-            closeQualityModal();
-            showVideoResult(data, normalOption);
-        };
-
-        qualityModal.classList.add("show");
-    }
-
-    function getDateStamp() {
-        const d = new Date();
-        return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
-    }
-
-    async function triggerDownload(url, filename, btnEl) {
-        const originalHTML = btnEl.innerHTML;
-        btnEl.style.pointerEvents = "none";
-        btnEl.style.opacity = "0.75";
-        btnEl.innerHTML = '<svg class="icon spin"><use href="#icon-loader"></use></svg> Mengunduh...';
-
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Gagal mengambil file dari server");
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-
-            const a = document.createElement("a");
-            a.href = blobUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
-        } catch (err) {
-            // Fallback: buka langsung kalau fetch gagal (mis. CORS)
-            window.open(url, "_blank");
-        } finally {
-            btnEl.innerHTML = originalHTML;
-            btnEl.style.pointerEvents = "auto";
-            btnEl.style.opacity = "1";
-        }
-    }
-
-    function pad2(n) {
-        return String(n).padStart(2, "0");
-    }
-
-    modeCards.forEach(card => {
-        card.addEventListener("click", () => {
-            modeCards.forEach(c => c.classList.remove("active"));
-            card.classList.add("active");
-            currentMode = card.getAttribute("data-mode");
-            if (currentMode === "audio") {
-                actionBtn.innerHTML = '<svg class="icon"><use href="#icon-music"></use></svg> Konversi MP3';
-            } else {
-                actionBtn.innerHTML = '<svg class="icon"><use href="#icon-sparkle"></use></svg> Proses';
-            }
-            resultDiv.innerHTML = "";
-        });
-    });
-
-    actionBtn.addEventListener("click", async () => {
-        const url = urlInput.value.trim();
-        if (!url) {
-            alert("Masukkan URL TikTok dulu!");
-            return;
-        }
-
-        loadingDiv.style.display = "flex";
-        resultDiv.innerHTML = "";
-
-        try {
-            const response = await fetch("/api/download", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: url, mode: currentMode })
-            });
-
-            const data = await response.json();
-
-            if (!data.success || !data.download_url) {
-                throw new Error(data.message || "Gagal mengambil data dari server");
-            }
-
-            if (currentMode === "video") {
-                const videoOptions = extractVideoOptions(data);
-                if (videoOptions.length > 1) {
-                    openQualityModal(data, videoOptions);
-                } else {
-                    showVideoResult(data, videoOptions[0]);
-                }
-            } else {
-                showAudioResult(data);
-            }
-        } catch (err) {
-            resultDiv.innerHTML = `<div class="cell error-cell"><div class="error-title"><svg class="icon"><use href="#icon-alert"></use></svg> Gagal</div>${err.message}<br>Coba URL lain atau cek koneksi</div>`;
-        } finally {
-            loadingDiv.style.display = "none";
-        }
-    });
-
-    function showVideoResult(data, chosenVideo) {
-        const title = data.title || "TikTok Video";
-        const author = data.author || "TikTok User";
-        const avatar = data.thumbnail || "https://ui-avatars.com/api/?background=7c3aed&color=fff&name=" + encodeURIComponent(author);
-        const likes = formatCount(data.stats?.likes);
-        const comments = formatCount(data.stats?.comments);
-        const isHd = chosenVideo.type === "nowatermark_hd";
-
-        let html = `
-            <div class="cell cell-video">
-                <video id="resultVideo" src="${chosenVideo.url}" controls autoplay loop playsinline poster="${data.thumbnail || ""}"></video>
-            </div>
-            <div class="cell cell-title">
-                <div class="title-text">${escapeHtml(title.substring(0, 90))} <span class="hd-badge"><svg class="icon"><use href="${isHd ? "#icon-star" : "#icon-smartphone"}"></use></svg>${isHd ? "HD" : "Normal"}</span></div>
-            </div>
-            <div class="cell cell-author">
-                <img class="author-avatar" src="${avatar}" onerror="this.src='https://ui-avatars.com/api/?background=7c3aed&color=fff&name=?'">
-                <div>
-                    <div class="author-name">@${escapeHtml(author)}</div>
-                    <div class="author-label">Creator</div>
-                </div>
-            </div>
-            <div class="cell cell-stats">
-                <div class="stat-item">
-                    <div class="num"><svg class="icon icon-fill"><use href="#icon-heart"></use></svg> ${likes}</div>
-                    <div class="lbl">Likes</div>
-                </div>
-                <div class="stat-item">
-                    <div class="num"><svg class="icon"><use href="#icon-message"></use></svg> ${comments}</div>
-                    <div class="lbl">Komentar</div>
-                </div>
-            </div>
-            <div class="cell cell-download" id="downloadActions">
-                <a class="btn-download video-btn" id="downloadLink" href="${chosenVideo.url}" download="video-${getDateStamp()}.mp4"><svg class="icon"><use href="#icon-download"></use></svg> Download Video (MP4)</a>
-            </div>
-        `;
-        resultDiv.innerHTML = html;
-
-        const downloadLink = document.getElementById("downloadLink");
-        downloadLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            triggerDownload(downloadLink.href, downloadLink.getAttribute("download"), downloadLink);
-        });
-    }
-
-    function showAudioResult(data) {
-        const audioUrl = data.download_url;
-        const title = data.title || "TikTok Audio";
-        const author = data.author || "TikTok Creator";
-
-        let html = `
-            <div class="cell cell-audio-avatar"><svg class="icon" style="width:1.6em;height:1.6em;color:#fff;"><use href="#icon-headphones"></use></svg></div>
-            <div class="cell cell-audio-info">
-                <div class="title-text">${escapeHtml(title.substring(0, 60))}</div>
-                <div class="author-label-row"><svg class="icon"><use href="#icon-mic"></use></svg> @${escapeHtml(author)}</div>
-                <audio controls src="${audioUrl}"></audio>
-            </div>
-            <div class="cell cell-download">
-                <a class="btn-download audio-btn" id="downloadLinkAudio" href="${audioUrl}" download="audio-${getDateStamp()}.mp3"><svg class="icon"><use href="#icon-download"></use></svg> Download MP3 (Audio Only)</a>
-            </div>
-        `;
-        resultDiv.innerHTML = html;
-
-        const downloadLinkAudio = document.getElementById("downloadLinkAudio");
-        downloadLinkAudio.addEventListener("click", (e) => {
-            e.preventDefault();
-            triggerDownload(downloadLinkAudio.href, downloadLinkAudio.getAttribute("download"), downloadLinkAudio);
-        });
-    }
-
-    function formatCount(n) {
-        if (n === null || n === undefined) return "?";
-        n = Number(n);
-        if (isNaN(n)) return "?";
-        if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
-        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
-        return String(n);
-    }
-
-    function escapeHtml(str) {
-        if (!str) return "";
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-</script>
+<script src="script.js"></script>
 </body>
 </html>
