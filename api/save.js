@@ -31,17 +31,27 @@ export default async function handler(req, res) {
   const asAttachment = mode === "download";
 
   try {
+    // teruskan header Range dari browser (video/audio WAJIB butuh ini untuk bisa play & seek,
+    // terutama di Safari/iOS — tanpa ini pemutar akan gagal total)
+    const rangeHeader = req.headers.range;
+
     const upstream = await axios.get(payload.url, {
       responseType: "stream",
       timeout: 60000,
-      headers: REQUEST_HEADERS,
+      headers: { ...REQUEST_HEADERS, ...(rangeHeader ? { Range: rangeHeader } : {}) },
       maxRedirects: 5,
+      validateStatus: (s) => (s >= 200 && s < 300) || s === 206,
     });
 
+    res.statusCode = upstream.status; // 200 (full) atau 206 (partial content)
     res.setHeader("Content-Type", isAudio ? "audio/mpeg" : "video/mp4");
     res.setHeader("Content-Disposition", `${asAttachment ? "attachment" : "inline"}; filename="${safeName}"`);
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Accept-Ranges", "bytes");
+    if (upstream.headers["content-range"]) {
+      res.setHeader("Content-Range", upstream.headers["content-range"]);
+    }
     if (upstream.headers["content-length"]) {
       res.setHeader("Content-Length", upstream.headers["content-length"]);
     }
