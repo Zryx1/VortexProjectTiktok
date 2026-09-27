@@ -56,6 +56,10 @@ function shake(el) {
 }
 
 const resVideo = document.getElementById("resVideo");
+const videoWrap = document.getElementById("videoWrap");
+const videoAvatar = document.getElementById("videoAvatar");
+const videoAvatarPh = document.getElementById("videoAvatarPh");
+const videoAvatarName = document.getElementById("videoAvatarName");
 const audioPlayer = document.getElementById("audioPlayer");
 const resAudio = document.getElementById("resAudio");
 const audioCover = document.getElementById("audioCover");
@@ -107,7 +111,7 @@ function renderResult(data) {
   audioBar.style.width = "0%";
 
   if (state.mode === "audio") {
-    resVideo.style.display = "none";
+    videoWrap.style.display = "none";
     audioPlayer.style.display = "flex";
     if (previewUrl) resAudio.src = previewUrl;
 
@@ -122,14 +126,29 @@ function renderResult(data) {
     }
   } else {
     audioPlayer.style.display = "none";
-    resVideo.style.display = "block";
+    videoWrap.style.display = "block";
     if (previewUrl) resVideo.src = previewUrl;
     if (data.thumbnail) resVideo.poster = data.thumbnail;
+
+    videoAvatarName.textContent = "@" + (data.author || "tiktok");
+    if (data.avatar) {
+      videoAvatar.onerror = () => { videoAvatar.style.display = "none"; videoAvatarPh.style.display = "block"; };
+      videoAvatar.src = data.avatar;
+      videoAvatar.style.display = "block";
+      videoAvatarPh.style.display = "none";
+    } else {
+      videoAvatar.style.display = "none";
+      videoAvatarPh.style.display = "block";
+    }
   }
 
+  document.getElementById("qualityText").textContent =
+    data.quality_label || (state.mode === "audio" ? "Audio — kualitas terbaik" : "HD — kualitas terbaik");
+
   dlBtn.dataset.url = data.download_url || "";
+  dlBtn.dataset.filename = `vortex_${(data.author || "tiktok").replace(/[^a-z0-9_-]/gi, "")}_${Date.now()}`;
   dlBtn.querySelector(".dltext").textContent =
-    state.mode === "audio" ? "Simpan Audio (MP3)" : "Simpan Video (HD)";
+    state.mode === "audio" ? "Unduh Audio (MP3)" : "Unduh Video (HD)";
   dlBtn.classList.remove("loading", "done");
 }
 
@@ -142,9 +161,10 @@ audioPlayBtn.addEventListener("click", () => {
     resAudio.pause();
   }
 });
-resAudio.addEventListener("play", () => audioPlayBtn.classList.add("playing"));
-resAudio.addEventListener("pause", () => audioPlayBtn.classList.remove("playing"));
-resAudio.addEventListener("ended", () => audioPlayBtn.classList.remove("playing"));
+const audioCoverWrap = document.querySelector(".audio-cover-wrap");
+resAudio.addEventListener("play", () => { audioPlayBtn.classList.add("playing"); audioCoverWrap.classList.add("playing"); });
+resAudio.addEventListener("pause", () => { audioPlayBtn.classList.remove("playing"); audioCoverWrap.classList.remove("playing"); });
+resAudio.addEventListener("ended", () => { audioPlayBtn.classList.remove("playing"); audioCoverWrap.classList.remove("playing"); });
 resAudio.addEventListener("loadedmetadata", () => {
   audioDur.textContent = formatTime(resAudio.duration);
 });
@@ -196,7 +216,7 @@ cta.addEventListener("click", async () => {
   }
 });
 
-// ---------- tombol simpan / download ----------
+// ---------- tombol unduh: langsung simpan file ke folder Download ----------
 dlBtn.addEventListener("click", () => {
   if (dlBtn.classList.contains("loading") || dlBtn.classList.contains("done")) return;
   const url = dlBtn.dataset.url;
@@ -206,10 +226,21 @@ dlBtn.addEventListener("click", () => {
   const originalText = dltext.textContent;
 
   dlBtn.classList.add("loading");
-  dltext.textContent = "Menyimpan...";
+  dltext.textContent = "Mengunduh...";
 
-  // buka file hasil download di tab baru — user simpan manual (perilaku umum downloader)
-  window.open(url, "_blank");
+  const params = new URLSearchParams({
+    url,
+    filename: dlBtn.dataset.filename || "vortex-tiktok",
+    type: state.mode,
+  });
+
+  // arahkan ke proxy /api/save agar browser langsung menyimpan file (bukan buka tab baru)
+  const a = document.createElement("a");
+  a.href = `/api/save?${params.toString()}`;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 
   setTimeout(() => {
     dlBtn.classList.remove("loading");
@@ -219,7 +250,7 @@ dlBtn.addEventListener("click", () => {
       dlBtn.classList.remove("done");
       dltext.textContent = originalText;
     }, 1700);
-  }, 700);
+  }, 900);
 });
 
 // ---------- submit via keyboard "Enter" ----------
