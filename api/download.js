@@ -170,6 +170,33 @@ async function ttdownFromMusicalDown(url) {
   };
 }
 
+// ========== PEMILIH KUALITAS TERBAIK (HD, tanpa watermark) ==========
+function pickBest(downloads, kind) {
+  const list = downloads || [];
+  const norm = (s) => (s || "").toString().toLowerCase();
+  const isAudioLike = (d) => /mp3|audio|music|sound/.test(norm(d.type) + " " + norm(d.label));
+
+  if (kind === "audio") {
+    const candidates = list.filter(isAudioLike);
+    return candidates[0] || null;
+  }
+
+  // video: beri skor, paling tinggi menang
+  const candidates = list
+    .filter((d) => !isAudioLike(d))
+    .map((d) => {
+      const t = norm(d.type) + " " + norm(d.label);
+      let score = 0;
+      if (/\bhd\b|1080|720|high/.test(t)) score += 4;
+      if (/no.?watermark|nowm|original|tanpa.?watermark/.test(t)) score += 3;
+      if (/\bwatermark\b/.test(t) && !/no.?watermark|tanpa.?watermark/.test(t)) score -= 6;
+      return { d, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return candidates[0]?.d || list[0] || null;
+}
+
 // ========== FUNGSI UTAMA: coba tiap sumber berurutan ==========
 async function ttdown(url) {
   if (!url.includes("tiktok.com")) throw new Error("URL bukan link TikTok yang valid.");
@@ -225,25 +252,19 @@ export default async function handler(req, res) {
   try {
     const result = await ttdown(url.trim());
 
-    let downloadUrl = null;
-
-    if (mode === "audio") {
-      const audio = result.downloads.find((d) => d.type === "mp3");
-      if (audio) downloadUrl = audio.url;
-    } else {
-      const video =
-        result.downloads.find((d) => d.type === "nowatermark_hd") ||
-        result.downloads.find((d) => d.type === "nowatermark");
-      if (video) downloadUrl = video.url;
-    }
-
-    if (!downloadUrl) {
-      downloadUrl = result.downloads[0]?.url;
-    }
+    const chosen = pickBest(result.downloads, mode === "audio" ? "audio" : "video");
+    const downloadUrl = chosen?.url || result.downloads[0]?.url || null;
 
     if (!downloadUrl) {
       throw new Error("Tidak ada link download yang ditemukan");
     }
+
+    const qualityLabel =
+      mode === "audio"
+        ? "Audio original — kualitas terbaik"
+        : chosen?.type && /hd/.test(chosen.type.toLowerCase())
+        ? "Video HD tanpa watermark"
+        : "Video tanpa watermark — kualitas terbaik yang tersedia";
 
     return res.status(200).json({
       success: true,
@@ -254,6 +275,7 @@ export default async function handler(req, res) {
       avatar: result.avatar || "",
       thumbnail: result.cover || "",
       stats: result.stats || null,
+      quality_label: qualityLabel,
       all_downloads: result.downloads,
       mode: mode || "video",
     });
