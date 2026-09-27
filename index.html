@@ -59,7 +59,10 @@
         <div class="rinfo">
           <div class="rt" id="resTitle">—</div>
           <div class="ra" id="resAuthor">
-            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.4-4 5-6 7.5-6s6.1 2 7.5 6"/></svg>
+            <span class="ra-avatar-wrap">
+              <img id="resAuthorAvatar" alt="" style="display:none">
+              <svg class="icon" id="resAuthorIcon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.4-4 5-6 7.5-6s6.1 2 7.5 6"/></svg>
+            </span>
             <span id="resAuthorText">—</span>
           </div>
           <div class="rstats" id="resStats">
@@ -72,11 +75,6 @@
       <div class="mediabox" id="mediaBox">
         <div class="video-wrap" id="videoWrap" style="display:none">
           <video id="resVideo" class="preview-video" controls playsinline preload="metadata"></video>
-          <div class="video-avatar-badge" id="videoAvatarBadge">
-            <img id="videoAvatar" alt="" style="display:none">
-            <svg class="icon" id="videoAvatarPh" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.4-4 5-6 7.5-6s6.1 2 7.5 6"/></svg>
-            <span id="videoAvatarName">@tiktok</span>
-          </div>
         </div>
 
         <div class="audioplayer" id="audioPlayer" style="display:none">
