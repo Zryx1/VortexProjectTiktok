@@ -2,107 +2,75 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>Vortex TikTok Downloader | Video & MP3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vortex — Downloader TikTok</title>
+<link rel="icon" href="/favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-<div class="aura" aria-hidden="true"><span></span><span></span><span></span></div>
-<canvas id="vortexCanvas" aria-hidden="true"></canvas>
-
-<svg style="display:none">
-    <symbol id="icon-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></symbol>
-    <symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
-    <symbol id="icon-sparkle" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9.5l-5.2 1.9L12 17l-1.8-5.6L5 9.5l5.2-1.9L12 2z"/><path d="M19 14l.8 2.4L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.6L19 14z"/></symbol>
-    <symbol id="icon-loader" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20"/></symbol>
-    <symbol id="icon-star" viewBox="0 0 24 24"><path d="M12 2l3 6.5 7 .8-5.2 4.9L18.2 21 12 17.5 5.8 21 7.2 14.2 2 9.3l7-.8L12 2z"/></symbol>
-    <symbol id="icon-smartphone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></symbol>
-    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
-    <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M12 21s-6.7-4.35-9.3-8.2C1 10 1.5 6.5 4.6 5 7 3.9 9.6 5 12 8c2.4-3 5-4.1 7.4-3 3.1 1.5 3.6 5 1.9 7.8C18.7 16.65 12 21 12 21z"/></symbol>
-    <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
-    <symbol id="icon-headphones" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><rect x="17" y="14" width="4" height="6" rx="2"/><rect x="3" y="14" width="4" height="6" rx="2"/></symbol>
-    <symbol id="icon-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></symbol>
-    <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.6 3.9a2 2 0 0 0-3.3 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
-    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></symbol>
-    <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
-</svg>
-
-<div class="modal-backdrop" id="qualityModal">
-    <div class="modal-card">
-        <div class="modal-close" id="modalClose"><svg class="icon"><use href="#icon-x"></use></svg></div>
-        <img class="modal-thumb" id="modalThumb" src="" alt="">
-        <div class="modal-title" id="modalTitle"></div>
-        <div class="modal-sub">Pilih kualitas video sebelum download</div>
-        <div class="modal-options">
-            <div class="modal-option" id="optHD">
-                <div class="opt-icon"><svg class="icon"><use href="#icon-star"></use></svg></div>
-                <div class="opt-text">
-                    <div class="opt-title">HD</div>
-                    <div class="opt-desc">Kualitas Bagus, ukuran file lebih besar</div>
-                </div>
-            </div>
-            <div class="modal-option secondary" id="optNormal">
-                <div class="opt-icon"><svg class="icon"><use href="#icon-smartphone"></use></svg></div>
-                <div class="opt-text">
-                    <div class="opt-title">Normal</div>
-                    <div class="opt-desc">Ukuran lebih kecil, proses lebih cepat</div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="hero">
+  <svg class="rings" viewBox="0 0 280 280"><circle class="r1" cx="140" cy="140" r="120"/><circle class="r2" cx="140" cy="140" r="90"/><circle class="r3" cx="140" cy="140" r="60"/></svg>
+  <div class="topbar">
+    <div class="mark"><img src="/logo-64.png" alt="Vortex" class="mark-logo">VORTEX</div>
+    <div class="status"><span class="pulse"></span>Online</div>
+  </div>
+  <h1><b>Downloader TikTok</b><span class="thin">by Vortex</span></h1>
+  <div class="chips">
+    <div class="chip"><b>HD</b>Kualitas</div>
+    <div class="chip"><b>MP4</b>Video</div>
+    <div class="chip"><b>MP3</b>Audio</div>
+  </div>
 </div>
 
-<div class="stage">
-    <div class="bento">
+<div class="panel">
+  <div class="label">PILIH FORMAT</div>
+  <div class="seg">
+    <div class="thumb" id="thumb"></div>
+    <button class="on" id="segVideo" type="button"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="6"/><path d="M10 8.5l6 3.5-6 3.5v-7z" fill="currentColor" stroke="none"/></svg>Video</button>
+    <button id="segAudio" type="button"><svg class="icon" viewBox="0 0 24 24"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="15" r="3"/><path d="M10 17V5l10-2v12"/></svg>MP3</button>
+  </div>
 
-        <div class="cell cell-header enter-1">
-            <div class="brand">
-                <div class="portal-ring">
-                    <div class="brand-icon"><img src="https://files.catbox.moe/55sfob.jpg" alt="Vortex" width="40" height="40" loading="eager" decoding="async"></div>
-                </div>
-                <div>
-                    <h1>Vortex</h1>
-                    <div class="sub">Tarik video &amp; audio TikTok, tanpa watermark</div>
-                </div>
-            </div>
-            <div class="badge-row">
-                <div class="pill-badge"><svg class="icon"><use href="#icon-shield"></use></svg> No Watermark</div>
-            </div>
-        </div>
+  <div class="label">TAUTAN TIKTOK</div>
+  <div class="inputbox">
+    <input type="text" id="urlInput" placeholder="https://vt.tiktok.com/...">
+    <button class="paste" id="pasteBtn" type="button"><svg class="icon" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="4" rx="1"/><path d="M7 5H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></button>
+  </div>
 
-        <div class="cell cell-mode active enter-2" id="modeCardVideo" data-mode="video">
-            <div class="mode-icon-wrap"><svg class="icon"><use href="#icon-video"></use></svg></div>
-            <div class="mode-title">Video</div>
-            <div class="mode-desc">Download video HD no watermark</div>
-        </div>
+  <button class="cta" id="ctaBtn" type="button">
+    <span class="bar"></span>
+    <svg class="icon cta-icon" id="ctaIcon" viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" stroke="none"/></svg>
+    <span id="ctaText">Proses tautan</span>
+  </button>
 
-        <div class="cell cell-mode enter-3" id="modeCardAudio" data-mode="audio">
-            <div class="mode-icon-wrap"><svg class="icon"><use href="#icon-music"></use></svg></div>
-            <div class="mode-title">MP3</div>
-            <div class="mode-desc">Ambil audio dalam format MP3</div>
-        </div>
+  <div class="error-box" id="errorBox"></div>
 
-        <div class="cell cell-input enter-4">
-            <div class="input-row">
-                <input type="text" id="tiktokUrl" placeholder="Tempel URL TikTok di sini...">
-                <button class="glow-btn" id="actionBtn"><svg class="icon"><use href="#icon-sparkle"></use></svg> Proses</button>
-            </div>
-        </div>
-
-        <div class="cell loading-cell" id="loadingArea" style="display: none;">
-            <svg class="icon spin"><use href="#icon-loader"></use></svg> Sedang menarik data dari pusaran...
-        </div>
-
-        <div id="resultArea" style="display: contents;"></div>
-
-        <footer class="enter-5">Powered by Vortex Proxy &middot; Multi-API Fallback By Zeff</footer>
+  <div class="result" id="result">
+    <div class="rcard">
+      <div class="thumb-ph" id="thumbWrap">
+        <img id="resThumb" alt="" style="display:none">
+        <svg class="icon" id="thumbIcon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="6"/><path d="M10 8.5l6 3.5-6 3.5v-7z" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div class="rinfo">
+        <div class="rt" id="resTitle">—</div>
+        <div class="ra" id="resAuthor">—</div>
+        <div class="rstats" id="resStats"></div>
+        <button class="dlbtn" id="dlBtn" type="button">
+          <svg class="icon ic-dl" viewBox="0 0 24 24"><path d="M12 3v11m0 0l-4-4m4 4l4-4"/><path d="M5 19h14"/></svg>
+          <svg class="icon ic-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          <span class="dltext">Simpan Video (HD)</span>
+        </button>
+      </div>
     </div>
+  </div>
+
+  <footer>Powered by Vortex Proxy</footer>
 </div>
 
-<script src="script.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>
