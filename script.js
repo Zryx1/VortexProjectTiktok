@@ -57,9 +57,8 @@ function shake(el) {
 
 const resVideo = document.getElementById("resVideo");
 const videoWrap = document.getElementById("videoWrap");
-const videoAvatar = document.getElementById("videoAvatar");
-const videoAvatarPh = document.getElementById("videoAvatarPh");
-const videoAvatarName = document.getElementById("videoAvatarName");
+const resAuthorAvatar = document.getElementById("resAuthorAvatar");
+const resAuthorIcon = document.getElementById("resAuthorIcon");
 const audioPlayer = document.getElementById("audioPlayer");
 const resAudio = document.getElementById("resAudio");
 const audioCover = document.getElementById("audioCover");
@@ -94,6 +93,16 @@ function renderResult(data) {
     icon.style.display = "block";
   }
 
+  if (data.avatar) {
+    resAuthorAvatar.onerror = () => { resAuthorAvatar.style.display = "none"; resAuthorIcon.style.display = "block"; };
+    resAuthorAvatar.src = data.avatar;
+    resAuthorAvatar.style.display = "block";
+    resAuthorIcon.style.display = "none";
+  } else {
+    resAuthorAvatar.style.display = "none";
+    resAuthorIcon.style.display = "block";
+  }
+
   const likes = formatNum(data.stats?.likes);
   const comments = formatNum(data.stats?.comments);
   document.getElementById("statLikes").querySelector("b").textContent = likes ?? "—";
@@ -101,8 +110,8 @@ function renderResult(data) {
   document.getElementById("statLikes").style.display = likes ? "flex" : "none";
   document.getElementById("statComments").style.display = comments ? "flex" : "none";
 
-  // ---------- preview yang bisa diputar langsung ----------
-  const previewUrl = data.preview_url || data.download_url || "";
+  // ---------- preview yang bisa diputar langsung (lewat proxy bertoken, bukan link CDN mentah) ----------
+  const previewUrl = data.token ? `/api/save?token=${encodeURIComponent(data.token)}&mode=preview` : "";
   resAudio.pause();
   resAudio.removeAttribute("src");
   resVideo.pause();
@@ -129,24 +138,12 @@ function renderResult(data) {
     videoWrap.style.display = "block";
     if (previewUrl) resVideo.src = previewUrl;
     if (data.thumbnail) resVideo.poster = data.thumbnail;
-
-    videoAvatarName.textContent = "@" + (data.author || "tiktok");
-    if (data.avatar) {
-      videoAvatar.onerror = () => { videoAvatar.style.display = "none"; videoAvatarPh.style.display = "block"; };
-      videoAvatar.src = data.avatar;
-      videoAvatar.style.display = "block";
-      videoAvatarPh.style.display = "none";
-    } else {
-      videoAvatar.style.display = "none";
-      videoAvatarPh.style.display = "block";
-    }
   }
 
   document.getElementById("qualityText").textContent =
     data.quality_label || (state.mode === "audio" ? "Audio — kualitas terbaik" : "HD — kualitas terbaik");
 
-  dlBtn.dataset.url = data.download_url || "";
-  dlBtn.dataset.filename = `vortex_${(data.author || "tiktok").replace(/[^a-z0-9_-]/gi, "")}_${Date.now()}`;
+  dlBtn.dataset.token = data.token || "";
   dlBtn.querySelector(".dltext").textContent =
     state.mode === "audio" ? "Unduh Audio (MP3)" : "Unduh Video (HD)";
   dlBtn.classList.remove("loading", "done");
@@ -219,8 +216,8 @@ cta.addEventListener("click", async () => {
 // ---------- tombol unduh: langsung simpan file ke folder Download ----------
 dlBtn.addEventListener("click", () => {
   if (dlBtn.classList.contains("loading") || dlBtn.classList.contains("done")) return;
-  const url = dlBtn.dataset.url;
-  if (!url) return;
+  const token = dlBtn.dataset.token;
+  if (!token) return;
 
   const dltext = dlBtn.querySelector(".dltext");
   const originalText = dltext.textContent;
@@ -228,15 +225,10 @@ dlBtn.addEventListener("click", () => {
   dlBtn.classList.add("loading");
   dltext.textContent = "Mengunduh...";
 
-  const params = new URLSearchParams({
-    url,
-    filename: dlBtn.dataset.filename || "vortex-tiktok",
-    type: state.mode,
-  });
-
-  // arahkan ke proxy /api/save agar browser langsung menyimpan file (bukan buka tab baru)
+  // arahkan ke proxy /api/save (bertoken, kedaluwarsa 5 menit) agar browser langsung
+  // menyimpan file — link ini tidak bisa dipakai ulang lewat wget/curl di luar halaman ini
   const a = document.createElement("a");
-  a.href = `/api/save?${params.toString()}`;
+  a.href = `/api/save?token=${encodeURIComponent(token)}&mode=download`;
   a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
