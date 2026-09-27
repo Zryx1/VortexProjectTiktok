@@ -1,6 +1,7 @@
 // api/download.js - Versi diperbaiki, multi-source fallback
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { guardRequest, signPayload } from "../lib/security.js";
 
 const REQUEST_HEADERS = {
   "user-agent":
@@ -235,6 +236,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: "Method harus POST" });
   }
 
+  const guard = guardRequest(req);
+  if (!guard.ok) {
+    return res.status(403).json({ success: false, message: guard.reason });
+  }
+
   let body = req.body;
   if (typeof body === "string") {
     try {
@@ -266,17 +272,26 @@ export default async function handler(req, res) {
         ? "Video HD tanpa watermark"
         : "Video tanpa watermark — kualitas terbaik yang tersedia";
 
+    const safeName =
+      "vortex_" + (result.author || "tiktok").toString().replace(/[^a-z0-9_-]/gi, "") + "_" + Date.now();
+
+    // URL CDN asli TIDAK pernah dikirim ke client — hanya token bertanda-tangan yang bisa
+    // dibuka oleh /api/save milik kita sendiri, dan hanya berlaku 5 menit.
+    const token = signPayload({
+      url: downloadUrl,
+      kind: mode === "audio" ? "audio" : "video",
+      filename: safeName,
+    });
+
     return res.status(200).json({
       success: true,
-      download_url: downloadUrl,
-      preview_url: downloadUrl,
+      token,
       title: result.title || "TikTok",
       author: result.author || "TikTok User",
       avatar: result.avatar || "",
       thumbnail: result.cover || "",
       stats: result.stats || null,
       quality_label: qualityLabel,
-      all_downloads: result.downloads,
       mode: mode || "video",
     });
   } catch (error) {
