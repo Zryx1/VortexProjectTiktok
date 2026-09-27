@@ -55,15 +55,34 @@ function shake(el) {
   setTimeout(() => el.classList.remove("shake"), 400);
 }
 
+const resVideo = document.getElementById("resVideo");
+const audioPlayer = document.getElementById("audioPlayer");
+const resAudio = document.getElementById("resAudio");
+const audioCover = document.getElementById("audioCover");
+const audioCoverPh = document.getElementById("audioCoverPh");
+const audioPlayBtn = document.getElementById("audioPlayBtn");
+const audioBar = document.getElementById("audioBar");
+const audioProgressTrack = document.getElementById("audioProgressTrack");
+const audioCur = document.getElementById("audioCur");
+const audioDur = document.getElementById("audioDur");
+
+function formatTime(sec) {
+  if (!isFinite(sec) || sec < 0) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
 function renderResult(data) {
   document.getElementById("resTitle").textContent = data.title || "TikTok";
-  document.getElementById("resAuthor").textContent = "@" + (data.author || "tiktok");
+  document.getElementById("resAuthorText").textContent = "@" + (data.author || "tiktok");
 
   const img = document.getElementById("resThumb");
   const icon = document.getElementById("thumbIcon");
-  if (data.thumbnail) {
+  const thumbSrc = data.thumbnail || data.avatar || "";
+  if (thumbSrc) {
     img.onerror = () => { img.style.display = "none"; icon.style.display = "block"; };
-    img.src = data.thumbnail;
+    img.src = thumbSrc;
     img.style.display = "block";
     icon.style.display = "none";
   } else {
@@ -73,16 +92,74 @@ function renderResult(data) {
 
   const likes = formatNum(data.stats?.likes);
   const comments = formatNum(data.stats?.comments);
-  const statsEl = document.getElementById("resStats");
-  statsEl.innerHTML =
-    (likes ? `<span><b>${likes}</b> suka</span>` : "") +
-    (comments ? `<span><b>${comments}</b> komentar</span>` : "");
+  document.getElementById("statLikes").querySelector("b").textContent = likes ?? "—";
+  document.getElementById("statComments").querySelector("b").textContent = comments ?? "—";
+  document.getElementById("statLikes").style.display = likes ? "flex" : "none";
+  document.getElementById("statComments").style.display = comments ? "flex" : "none";
+
+  // ---------- preview yang bisa diputar langsung ----------
+  const previewUrl = data.preview_url || data.download_url || "";
+  resAudio.pause();
+  resAudio.removeAttribute("src");
+  resVideo.pause();
+  resVideo.removeAttribute("src");
+  audioPlayBtn.classList.remove("playing");
+  audioBar.style.width = "0%";
+
+  if (state.mode === "audio") {
+    resVideo.style.display = "none";
+    audioPlayer.style.display = "flex";
+    if (previewUrl) resAudio.src = previewUrl;
+
+    if (data.avatar) {
+      audioCover.onerror = () => { audioCover.style.display = "none"; audioCoverPh.style.display = "block"; };
+      audioCover.src = data.avatar;
+      audioCover.style.display = "block";
+      audioCoverPh.style.display = "none";
+    } else {
+      audioCover.style.display = "none";
+      audioCoverPh.style.display = "block";
+    }
+  } else {
+    audioPlayer.style.display = "none";
+    resVideo.style.display = "block";
+    if (previewUrl) resVideo.src = previewUrl;
+    if (data.thumbnail) resVideo.poster = data.thumbnail;
+  }
 
   dlBtn.dataset.url = data.download_url || "";
   dlBtn.querySelector(".dltext").textContent =
     state.mode === "audio" ? "Simpan Audio (MP3)" : "Simpan Video (HD)";
   dlBtn.classList.remove("loading", "done");
 }
+
+// ---------- kontrol player audio custom (cover = foto profil akun) ----------
+audioPlayBtn.addEventListener("click", () => {
+  if (!resAudio.src) return;
+  if (resAudio.paused) {
+    resAudio.play().catch(() => {});
+  } else {
+    resAudio.pause();
+  }
+});
+resAudio.addEventListener("play", () => audioPlayBtn.classList.add("playing"));
+resAudio.addEventListener("pause", () => audioPlayBtn.classList.remove("playing"));
+resAudio.addEventListener("ended", () => audioPlayBtn.classList.remove("playing"));
+resAudio.addEventListener("loadedmetadata", () => {
+  audioDur.textContent = formatTime(resAudio.duration);
+});
+resAudio.addEventListener("timeupdate", () => {
+  if (resAudio.duration) {
+    audioBar.style.width = (resAudio.currentTime / resAudio.duration) * 100 + "%";
+  }
+  audioCur.textContent = formatTime(resAudio.currentTime);
+});
+audioProgressTrack.addEventListener("click", (e) => {
+  if (!resAudio.duration) return;
+  const rect = audioProgressTrack.getBoundingClientRect();
+  const ratio = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+  resAudio.currentTime = ratio * resAudio.duration;
+});
 
 // ---------- proses tautan (panggil api/download.js yang asli) ----------
 cta.addEventListener("click", async () => {
