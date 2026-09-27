@@ -53,6 +53,7 @@ async function ttdownFromTikwm(url) {
   return {
     title: result.title || "",
     author: result.author?.unique_id || result.author?.nickname || "",
+    avatar: result.author?.avatar || result.author?.avatar_thumb || result.author?.avatar_larger || null,
     cover: result.cover || result.origin_cover || null,
     stats: {
       likes: result.digg_count ?? null,
@@ -96,7 +97,8 @@ async function ttdownFromYuuLabs(url) {
   return {
     title: result.description || "",
     author: result.author || "",
-    cover: null,
+    avatar: result.avatar || result.authorAvatar || null,
+    cover: result.cover || null,
     stats: null,
     downloads,
   };
@@ -156,9 +158,12 @@ async function ttdownFromMusicalDown(url) {
     throw new Error("MusicalDown tidak mengembalikan link download");
   }
 
+  const avatarSrc = $$(".video-author img").attr("src") || null;
+
   return {
     title: $$(".video-desc").text().trim(),
     author: $$(".video-author b").text().trim(),
+    avatar: avatarSrc,
     cover: coverMatch ? coverMatch[1] : null,
     stats: null,
     downloads,
@@ -243,8 +248,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       download_url: downloadUrl,
+      preview_url: downloadUrl,
       title: result.title || "TikTok",
       author: result.author || "TikTok User",
+      avatar: result.avatar || "",
       thumbnail: result.cover || "",
       stats: result.stats || null,
       all_downloads: result.downloads,
