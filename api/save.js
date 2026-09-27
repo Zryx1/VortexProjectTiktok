@@ -1,40 +1,37 @@
-// api/save.js - Proxy unduhan langsung (memaksa file tersimpan ke folder Download)
+// api/save.js - Proxy streaming: hanya menerima token bertanda-tangan (bukan URL bebas),
+// jadi tidak bisa dipakai sebagai open-proxy dan tidak bisa "dicopy" langsung lewat wget/curl.
 import axios from "axios";
+import { guardRequest, verifyToken } from "../lib/security.js";
 
 const REQUEST_HEADERS = {
   "user-agent":
     "Mozilla/5.0 (Linux; Android 15; SM-F958 Build/AP3A.240905.015) AppleWebKit/537.36 (Chrome) Mobile Safari/537.36",
 };
 
-function sanitizeFilename(name) {
-  return (name || "vortex-tiktok")
-    .toString()
-    .trim()
-    .replace(/[\\/:*?"<>|]+/g, "")
-    .replace(/\s+/g, "_")
-    .slice(0, 60) || "vortex-tiktok";
-}
-
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method harus GET" });
   }
 
-  const { url, filename, type } = req.query || {};
-  if (!url || typeof url !== "string") {
-    return res.status(400).json({ success: false, message: "URL file kosong" });
+  // blokir tool CLI/bot (wget, curl, python-requests, dll) + wajib berasal dari halaman sendiri
+  const guard = guardRequest(req);
+  if (!guard.ok) {
+    return res.status(403).json({ success: false, message: guard.reason });
   }
 
-  const isAudio = type === "audio";
+  const { token, mode } = req.query || {};
+  const payload = verifyToken(token);
+  if (!payload) {
+    return res.status(403).json({ success: false, message: "Link kedaluwarsa atau tidak valid. Proses ulang tautannya." });
+  }
+
+  const isAudio = payload.kind === "audio";
   const ext = isAudio ? "mp3" : "mp4";
-  const safeName = sanitizeFilename(filename) + "." + ext;
+  const safeName = (payload.filename || "vortex-tiktok").replace(/[^a-z0-9_-]/gi, "_") + "." + ext;
+  const asAttachment = mode === "download";
 
   try {
-    const upstream = await axios.get(url, {
+    const upstream = await axios.get(payload.url, {
       responseType: "stream",
       timeout: 60000,
       headers: REQUEST_HEADERS,
@@ -42,7 +39,9 @@ export default async function handler(req, res) {
     });
 
     res.setHeader("Content-Type", isAudio ? "audio/mpeg" : "video/mp4");
-    res.setHeader("Content-Disposition", `attachment; filename="${safeName}"`);
+    res.setHeader("Content-Disposition", `${asAttachment ? "attachment" : "inline"}; filename="${safeName}"`);
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
     if (upstream.headers["content-length"]) {
       res.setHeader("Content-Length", upstream.headers["content-length"]);
     }
